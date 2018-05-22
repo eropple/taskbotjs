@@ -1,0 +1,23 @@
+{
+  "private": true,
+  "name": "@jsjobs/workspace",
+  "version": "0.1.0-wip",
+  "scripts": {
+    "test": "oao run-script test",
+    "build": "oao run-script build --parallel",
+    "watch": "oao run-script watch --parallel",
+    "clean": "oao run-script clean --parallel"
+  },
+  "devDependencies": {
+    "oao": "^1.2.1",
+    "pryjs": "^1.0.3",
+    "typedoc": "^0.11.1"
+  },
+  "workspaces": [
+    "service",
+    "client",
+    "example",
+    "webapi",
+    "panel"
+  ]
+}
