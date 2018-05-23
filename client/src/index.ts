@@ -49,7 +49,7 @@ export {
   WorkerInfo,
   StorageInfo,
 
-  MetricDay,
+  WorkMetric,
   MetricDayRange
 } from "./domain";
 

@@ -7,12 +7,13 @@ export interface WorkerInfo {
   readonly lastBeat: number;
 }
 
-export interface MetricDay {
+export interface WorkMetric {
   readonly processed: number;
   readonly errored: number;
   readonly died: number;
 }
 
+// TODO: unify this and WorkMetric; is "total" really necessary?
 export interface BasicMetrics {
   readonly totalProcessed: number;
   readonly totalErrored: number;
@@ -22,7 +23,7 @@ export interface BasicMetrics {
   readonly deadSetSize: number;
 }
 
-export type MetricDayRange = { [date: string]: MetricDay };
+export type MetricDayRange = { [date: string]: WorkMetric };
 
 export interface QueueInfo {
   readonly name: string;
