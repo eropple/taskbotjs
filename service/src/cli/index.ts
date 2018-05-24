@@ -10,7 +10,7 @@ require("ts-node").register({});
 
 const packageJson = fs.readJsonSync(`${__dirname}/../../package.json`);
 
-export function start(args: string[]): void {
+export async function start(args: string[]): Promise<void> {
   // return program
   //   .version(packageJson.version)
   //   .description("The best job queue for NodeJS.")
@@ -38,6 +38,6 @@ export function start(args: string[]): void {
     process.exit(1);
   } else {
     const server = new Server(config);
-    server.start();
+    await server.start();
   }
 }

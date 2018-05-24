@@ -3,22 +3,23 @@ import { DateTime } from "luxon";
 
 import { ServerBase } from "..";
 import { ClientPool, JobDescriptor, LUXON_YMD } from "@taskbotjs/client";
+import { ServerPlugin } from "../../ServerPlugin";
+import { PluginConfig } from "../../Config/Config";
 
-export class Metrics {
-  private readonly logger: Bunyan;
+export class Metrics extends ServerPlugin<PluginConfig> {
+  private static readonly CONFIG: PluginConfig = { enabled: true };
 
-  constructor(baseLogger: Bunyan, private readonly server: ServerBase, private readonly clientPool: ClientPool) {
-    this.logger = baseLogger.child({ component: "Metrics" });
-  }
+  // this plugin requires no plugin and is always enabled.
+  protected get config() { return Metrics.CONFIG; }
 
-  attach() {
+  async initialize(): Promise<void> {
     this.logger.info("Attaching metrics listeners.");
 
     this.server.onJobComplete(async (jd: JobDescriptor) => {
       const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/processed";
       const dateKey = "metrics/processed/" + date;
-      await this.clientPool.use(async (taskbot) => {
+      await this.withClient(async (taskbot) => {
         await taskbot.incrementCounter(allKey);
         await taskbot.incrementCounter(dateKey);
       });
@@ -28,7 +29,7 @@ export class Metrics {
       const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/errored";
       const dateKey = "metrics/errored/" + date;
-      await this.clientPool.use(async (taskbot) => {
+      await this.withClient(async (taskbot) => {
         await taskbot.incrementCounter(allKey);
         await taskbot.incrementCounter(dateKey);
       });
@@ -38,10 +39,12 @@ export class Metrics {
       const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/died";
       const dateKey = "metrics/died/" + date;
-      await this.clientPool.use(async (taskbot) => {
+      await this.withClient(async (taskbot) => {
         await taskbot.incrementCounter(allKey);
         await taskbot.incrementCounter(dateKey);
       });
     });
   }
+
+  async cleanup(): Promise<void> {}
 }

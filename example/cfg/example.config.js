@@ -39,8 +39,8 @@ config.dependencies = (baseLogger) => new NoDeps(baseLogger);
 config.logger = Bunyan.createLogger({
   name: "consumer",
   // level: "trace", // everything you didn't actually want to know
-  level: "debug", // less spam, includes implementation details
-  // level: "info", // minimal what-you-need-to-know level
+  // level: "debug", // less spam, includes implementation details
+  level: "info", // minimal what-you-need-to-know level
   streams: [
     // { // comfy development output
     //   type: 'raw',

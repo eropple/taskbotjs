@@ -1,34 +1,34 @@
 import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
-import { ServerBase } from "..";
 import { ClientPool, WorkerInfo } from "@taskbotjs/client";
-import { VERSION, FLAVOR } from "../..";
 
-export class Heartbeat {
-  private readonly logger: Bunyan;
-  private readonly key: string;
+import { ServerBase } from "..";
+import { ServerPlugin } from "../../ServerPlugin";
+import { VERSION, FLAVOR } from "../..";
+import { PluginConfig } from "../../Config/Config";
+
+export class Heartbeat extends ServerPlugin<PluginConfig> {
+  private static readonly CONFIG: PluginConfig = { enabled: true };
 
   private timeout: NodeJS.Timer;
   private isShuttingDown: boolean = false;
 
-  constructor(baseLogger: Bunyan, private readonly server: ServerBase, private readonly clientPool: ClientPool) {
-    this.logger = baseLogger.child({ component: "Heartbeat" });
-  }
+  // this plugin requires no plugin and is always enabled.
+  protected get config() { return Heartbeat.CONFIG; }
 
-  start() {
+  async initialize(): Promise<void> {
     this.timeout = setInterval(
       async () => {
         if (!this.isShuttingDown) {
-          this.clientPool.use(async (taskbot) => taskbot.updateWorkerInfo(this.buildWorkerInfo()));
+          await this.withClient(async (taskbot) => taskbot.updateWorkerInfo(this.buildWorkerInfo()));
         }
       },
       250
     );
   }
 
-  async shutdown() {
-    this.logger.info("Shutting down heartbeat.");
+  async cleanup(): Promise<void> {
     if (this.timeout) {
       this.isShuttingDown = true;
       clearInterval(this.timeout);

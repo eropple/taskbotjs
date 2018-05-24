@@ -21,6 +21,8 @@ import {
   RetryFunctionTimingFunction
 } from "@taskbotjs/client";
 
+import { ConstructableServerPlugin } from "../ServerPlugin";
+
 export type FinalizedConfig<TDependencies extends IDependencies> = DeepReadonly<Config<TDependencies>>;
 export type LoggerFactory = () => Bunyan;
 export type DependenciesFactory<TDependencies extends IDependencies> =
@@ -72,7 +74,15 @@ export interface TimeInterval {
   splay: number;
 }
 
-export interface PollingConfig {
+export interface PluginConfig {
+  enabled: boolean;
+}
+
+/**
+ * Base interface for any poller plugin. Provides the `polling` interface
+ * which governs how rapidly the poller should tick.
+ */
+export interface PollerConfig extends PluginConfig {
   polling: TimeInterval;
 }
 
@@ -80,14 +90,14 @@ export interface PollingConfig {
  * Configuration for the retry poller, which checks the retry set for
  * jobs ready to be retried.
  */
-export interface RetryConfig extends PollingConfig {
+export interface RetryConfig extends PollerConfig {
 
 }
 /**
  * Configuration for the scheduled poller, which checks the scheduled set for
  * jobs ready to be queued at a given time.
  */
-export interface ScheduleConfig extends PollingConfig {
+export interface ScheduleConfig extends PollerConfig {
 
 }
 
@@ -142,6 +152,7 @@ export class ConfigBase {
    * Configuration for the retry poller.
    */
   retry: RetryConfig = {
+    enabled: true,
     polling: { interval: 1, splay: 0.1 }
   };
 
@@ -149,6 +160,7 @@ export class ConfigBase {
    * Configuration for the schedule poller.
    */
   schedule: ScheduleConfig = {
+    enabled: true,
     polling: { interval: 1, splay: 0.1 }
   };
 
@@ -167,7 +179,20 @@ export class ConfigBase {
   logger: Bunyan = Bunyan.createLogger({ name: "taskbotjs-server" });
 
   /**
-   * Builds a TaskBotJS client for the server. This method should be considered internal.
+   * Plugins that implement the `ServerPlugin` abstract class.
+   */
+  plugins: Array<ConstructableServerPlugin> = [];
+
+  /**
+   * Generic config extensions. Nothing in TaskBotJS proper uses this field, but it's
+   * provided for plugins or other uses. Please note that Config objects are deeply
+   * copied before being used by the server; putting complex objects into this field
+   * might get weird.
+   */
+  x: object = {};
+
+  /**
+   * Builds a JSJobs client for the server. This method should be considered internal.
    *
    * @private
    */

@@ -1,12 +1,18 @@
 import { DateTime } from "luxon";
 
-import { Poller } from "./Poller";
-import { ScheduleConfig } from "../../Config/Config";
 import { ClientRoot } from "@taskbotjs/client";
 
-export class ScheduledPoller extends Poller<ScheduleConfig> {
-  async loopIter(client: ClientRoot): Promise<void> {
-    await client.withScheduledSet(async (scheduledSet) => {
+import { ScheduleConfig } from "../../Config/Config";
+import { ServerPoller } from "../../ServerPoller";
+
+export class ScheduledPoller extends ServerPoller<ScheduleConfig> {
+  protected get config(): ScheduleConfig { return this.server.config.schedule; }
+
+  async initialize() {}
+  async cleanup() {}
+
+  async loopIter(taskbot: ClientRoot): Promise<void> {
+    await taskbot.withScheduledSet(async (scheduledSet) => {
       const now = DateTime.utc().valueOf();
       let shallBreak = false;
 
@@ -16,7 +22,7 @@ export class ScheduledPoller extends Poller<ScheduleConfig> {
             const logger = this.logger.child({ jobId: descriptor.id });
             logger.info("Found scheduled job; queueing.");
 
-            client.withQueue(descriptor.options.queue, async (queue) => {
+            taskbot.withQueue(descriptor.options.queue, async (queue) => {
               await queue.enqueue(descriptor);
             });
           },

@@ -146,7 +146,8 @@ export abstract class ClientBase<TStorage> extends ClientRoot {
       source: `${os.hostname}/${process.pid}`,
       createdAt: DateTime.utc().valueOf(),
       args,
-      options
+      options,
+      x: {}
     };
   }
 }

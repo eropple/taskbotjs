@@ -37,4 +37,5 @@ export type JobDescriptor = {
   options: JobDescriptorOptions;
   status?: JobDescriptorStatus;
   orchestration?: JobDescriptorOrchestration;
+  x: object;
 }

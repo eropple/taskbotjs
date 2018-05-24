@@ -24,10 +24,15 @@ import {
   IIntake
 } from "./intakes";
 import { Worker } from "./Worker";
-import { IPoller, Poller, RetryPoller, ScheduledPoller } from "./pollers";
+
+import { RetryPoller } from "./pollers/RetryPoller";
+import { ScheduledPoller } from "./pollers/ScheduledPoller";
 
 import { sleepFor, yieldExecution } from "../util";
 import { ClientRequest } from "http";
+import { ServerPlugin, ServerPluginBase } from "../ServerPlugin";
+import { ServerPoller } from "../ServerPoller";
+
 import { Metrics } from "./Metrics";
 import { Heartbeat } from "./Heartbeat";
 import { VERSION, FLAVOR } from "..";
@@ -47,6 +52,12 @@ export abstract class ServerBase extends EventEmitter {
    * The configuration for this server.
    */
   readonly config: ConfigBase;
+
+  /**
+   * The server's client pool. Exposed to allow external libraries (particularly
+   * `ServerPlugin`s) to request client access.
+   */
+  readonly clientPool: ClientPool;
 
   /**
    * Invoked when an error is caught from the intake mechanism.
@@ -95,7 +106,7 @@ export abstract class ServerBase extends EventEmitter {
   /**
    * Starts the server.
    */
-  abstract start(): void;
+  abstract async start(): Promise<void>;
   /**
    * Stops the server. This is a graceful shutdown and the promise should be
    * awaited on in order to make sure that any jobs currently being executed
@@ -103,8 +114,10 @@ export abstract class ServerBase extends EventEmitter {
    */
   abstract async shutdown(): Promise<void>;
 
-  constructor() {
+  constructor(cp: ClientPool) {
     super();
+
+    this.clientPool = cp;
 
     this.name = [
       os.hostname(),
@@ -125,13 +138,12 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
    * This server's configuration.
    */
   readonly config: Config<TDependencies>;
-  private readonly clientPool: ClientPool;
   private readonly metrics: Metrics;
   private readonly heartbeat: Heartbeat;
-  private readonly pollers: Array<IPoller> = [];
   private readonly retryPoller: RetryPoller;
   private readonly scheduledPoller: ScheduledPoller;
 
+  private plugins: Array<ServerPluginBase> = [];
   private isShuttingDown: boolean = false;
   private intakeLoopTerminated: boolean = false;
   private workerHandleLoopTerminated: boolean = false;
@@ -142,45 +154,51 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
   private readonly activeWorkers: Array<Worker<TDependencies>> = [];
 
   constructor(config: Config<TDependencies>) {
-    super();
+    super(config.buildClientPool());
     this.config = config.copy();
     this.baseLogger = this.config.logger;
 
     this.logger = this.baseLogger.child({ component: "Server" });
     this.logger.info({ version: VERSION, flavor: FLAVOR }, "Instantiating server.");
 
-    this.clientPool = this.config.buildClientPool();
-    this.metrics = new Metrics(this.baseLogger, this, this.clientPool);
-    this.heartbeat = new Heartbeat(this.baseLogger, this, this.clientPool);
+    this.metrics = new Metrics(this.baseLogger, this);
+    this.heartbeat = new Heartbeat(this.baseLogger, this);
     this.intake = buildIntake(this.config, this.clientPool, this.logger);
 
-    this.retryPoller = new RetryPoller(this.config.retry, this.clientPool, this.logger);
-    this.scheduledPoller = new ScheduledPoller(this.config.schedule, this.clientPool, this.logger);
-    this.pollers.push(this.retryPoller);
-    this.pollers.push(this.scheduledPoller);
+    this.retryPoller = new RetryPoller(this.baseLogger, this);
+    this.scheduledPoller = new ScheduledPoller(this.baseLogger, this);
   }
 
   get activeWorkerCount() { return this.activeWorkers.length; }
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.intakeLoopTerminated) {
       throw new Error("Server cannot be restarted once terminated.");
     }
 
+    this.plugins = _.concat([
+      this.metrics,
+      this.heartbeat,
+
+      this.retryPoller,
+      this.scheduledPoller
+    ], this.config.plugins.map((p) => new p(this.logger, this)));
+
     this.logger.info({ jobHandlerCount: Object.values(this.config.jobMap).length }, "Starting server.");
 
-    this.logger.debug("Initializing metrics.");
-    this.metrics.attach();
-
-    this.logger.debug("Starting heartbeat.");
-    this.heartbeat.start();
+    this.logger.info("Initializing plugins.");
+    for (let plugin of this.plugins) {
+      await plugin.doInitialize();
+    }
 
     this.logger.debug("Initializing intake.");
     this.intake.initialize();
 
     this.logger.debug("Initializing pollers.");
-    for(let poller of this.pollers) {
-      poller.start();
+    for (let poller of this.plugins.filter((p) => p instanceof ServerPoller)) {
+      // TODO: go back and redesign to type-erase ServerPoller's generic type.
+      // this is intentionally not awaited; we don't care about its return
+      (poller as any).doStart();
     }
 
     if (this.config.listenToSignals) {
@@ -211,14 +229,11 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     // TODO: this can probably be folded into the event loop, but are these too order-dependent?
     this.logger.info("Shutting down server.");
 
-    this.logger.debug("Stopping heartbeat.");
-    await this.heartbeat.shutdown();
-
-    this.logger.debug("Stopping intake.");
-    this.intake.stop();
-
     this.logger.debug("Stopping pollers.");
-    await Promise.all(this.pollers.map((p) => p.shutdown()));
+    for (let poller of this.plugins.filter((p) => p instanceof ServerPoller)) {
+      // TODO: go back and redesign to type-erase ServerPoller's generic type.
+      await (poller as any).doStop();
+    }
 
     // We need to wait for the main loops to terminate in order to make
     // our job slots settle out and be consistent for our cleanup step.
@@ -226,6 +241,11 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.isShuttingDown = true;
     while (!this.intakeLoopTerminated || !this.workerHandleLoopTerminated) {
       await sleepAsync(250);
+    }
+
+    this.logger.info("Cleaning up plugins.");
+    for (let plugin of this.plugins) {
+      await plugin.doCleanup();
     }
 
     this.logger.info("Cleaning up.");
