@@ -33,7 +33,7 @@ export class Queues extends React.Component {
     }
   }
 
-  async _fetch(taskbot) {
+  async _fetch(client) {
     try {
       const resp = await client.get("/queues");
       const queues = resp.data;

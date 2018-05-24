@@ -3,7 +3,10 @@ import fs from "fs";
 
 import express from "express";
 import cors from "cors";
-import { WebAPIApp, Middleware } from "@taskbotjs/webapi";
+import {
+  WebAPIApp,
+  Middleware
+} from "@taskbotjs/webapi";
 
 import { PanelConfig } from "./PanelConfig";
 

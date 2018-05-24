@@ -5,7 +5,9 @@ import Bunyan from "bunyan";
 import Chance from "chance";
 import sleepAsync from "sleep-promise";
 
-import { Client } from "@taskbotjs/client";
+import {
+  Client
+} from "@taskbotjs/client";
 import { PingJob } from "../jobs/PingJob";
 import { PongJob } from "../jobs/PongJob";
 import { FailJob } from "../jobs/FailJob";

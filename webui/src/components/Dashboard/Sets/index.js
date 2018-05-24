@@ -33,7 +33,7 @@ export class Sets extends React.Component {
     }
   }
 
-  async _fetch(taskbot) {
+  async _fetch(client) {
     try {
       const resp = await client.get("/metrics/basic");
       const metrics = resp.data;

@@ -1,7 +1,11 @@
 import Bunyan from "bunyan";
 
+import {
+  ClientPool,
+  ClientRoot
+} from "@taskbotjs/client";
+
 import { ServerBase } from "../Server";
-import { ClientPool, ClientRoot } from "@taskbotjs/client";
 import { PluginConfig } from "../Config/Config";
 
 export interface ConstructableServerPlugin {

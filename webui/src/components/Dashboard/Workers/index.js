@@ -35,7 +35,7 @@ export class Workers extends React.Component {
     }
   }
 
-  async _fetch(taskbot) {
+  async _fetch(client) {
     try {
       const resp = await client.get("/workers");
       const workers = resp.data;
@@ -81,7 +81,7 @@ export class Workers extends React.Component {
 
     try {
       await client.post("/workers/cleanup");
-      this._fetch(taskbot);
+      this._fetch(client);
     } catch (error) {
       console.error(error);
       this.setState({ error });

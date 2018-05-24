@@ -1,6 +1,8 @@
 import { DateTime } from "luxon";
 
-import { ClientRoot } from "@taskbotjs/client";
+import {
+  ClientRoot
+} from "@taskbotjs/client";
 
 import { ScheduleConfig } from "../../Config/Config";
 import { ServerPoller } from "../../ServerPoller";

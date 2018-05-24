@@ -2,7 +2,11 @@ import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
 import { ServerBase } from "..";
-import { ClientPool, JobDescriptor, LUXON_YMD } from "@taskbotjs/client";
+import {
+  ClientPool,
+  JobDescriptor,
+  LUXON_YMD
+} from "@taskbotjs/client";
 import { ServerPlugin } from "../../ServerPlugin";
 import { PluginConfig } from "../../Config/Config";
 

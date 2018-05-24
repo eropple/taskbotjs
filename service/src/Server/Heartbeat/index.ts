@@ -1,7 +1,10 @@
 import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
-import { ClientPool, WorkerInfo } from "@taskbotjs/client";
+import {
+  ClientPool,
+  WorkerInfo
+} from "@taskbotjs/client";
 
 import { ServerBase } from "..";
 import { ServerPlugin } from "../../ServerPlugin";

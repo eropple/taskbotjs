@@ -1,7 +1,10 @@
 import Chance from "chance";
 import sleepAsync from "sleep-promise";
 
-import { Job, IDependencies } from "@taskbotjs/client";
+import {
+  Job,
+  IDependencies
+} from "@taskbotjs/client";
 
 import { NoDeps } from "../NoDeps";
 

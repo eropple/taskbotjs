@@ -1,6 +1,8 @@
 import sleepAsync from "sleep-promise";
 
-import { ClientRoot } from "@taskbotjs/client";
+import {
+  ClientRoot
+} from "@taskbotjs/client";
 
 import { TimeInterval } from "../Config";
 import { ServerPlugin } from "../ServerPlugin";

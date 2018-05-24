@@ -2,7 +2,12 @@ import Chance from "chance";
 import sleepAsync from "sleep-promise";
 import { DateTime } from "luxon";
 
-import { Job, IDependencies, constantBackoff, RetryFunctionTimingFunction } from "@taskbotjs/client";
+import {
+  Job,
+  IDependencies,
+  constantBackoff,
+  RetryFunctionTimingFunction
+} from "@taskbotjs/client";
 
 import { NoDeps } from "../NoDeps";
 

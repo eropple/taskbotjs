@@ -1,12 +1,14 @@
 import * as _ from "lodash";
 import Bunyan from "bunyan";
 
+import {
+  IDependencies,
+  ClientPool
+} from "@taskbotjs/client";
+
 import { ConfigBase, IntakeConfig } from "../../Config";
-
-import { Intake, IIntake } from "./Intake";
-
 import { weightedIntakes } from "./WeightedQueueIntake";
-import { IDependencies, ClientPool } from "@taskbotjs/client";
+import { Intake, IIntake } from "./Intake";
 
 export { Intake, IIntake } from "./Intake";
 
