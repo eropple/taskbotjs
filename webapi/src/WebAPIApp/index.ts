@@ -12,7 +12,7 @@ import {
   LUXON_YMD,
   JobDescriptor,
   QueueInfo
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 
 import { APIError, NotFoundError } from "./APIError";
 import * as Middleware from "./Middleware";
@@ -42,17 +42,17 @@ export class WebAPIApp {
     });
 
     app.get("/workers", asyncHandler(async (req, res) => {
-      const resp: Array<WorkerInfo> = await this.clientPool.use((jsjobs) =>  jsjobs.getWorkerInfo());
+      const resp: Array<WorkerInfo> = await this.clientPool.use((taskbot) =>  taskbot.getWorkerInfo());
       res.json(resp);
     }));
 
     app.post("/workers/cleanup", asyncHandler(async (req, res) => {
-      await this.clientPool.use((jsjobs) => jsjobs.cleanUpDeadWorkers());
+      await this.clientPool.use((taskbot) => taskbot.cleanUpDeadWorkers());
       res.json({ ok: true });
     }));
 
     app.get("/queues", asyncHandler(async (req, res) => {
-      const resp: Array<QueueInfo> = await this.clientPool.use((jsjobs) => jsjobs.getQueueInfo());
+      const resp: Array<QueueInfo> = await this.clientPool.use((taskbot) => taskbot.getQueueInfo());
       res.json(resp);
     }));
 
@@ -63,7 +63,7 @@ export class WebAPIApp {
 
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withQueue(
+          (taskbot) => taskbot.withQueue(
             queueName,
             (queue) => queue.peek(limit, offset)
           )
@@ -78,7 +78,7 @@ export class WebAPIApp {
 
       const resp: JobDescriptor | null =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withQueue(
+          (taskbot) => taskbot.withQueue(
             queueName,
             (queue) => queue.byId(jobId)
           )
@@ -96,7 +96,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withQueue(
+        (taskbot) => taskbot.withQueue(
           queueName,
           (queue) => queue.removeById(jobId)
         )
@@ -110,7 +110,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withQueue(
+        (taskbot) => taskbot.withQueue(
           queueName,
           async (queue) => {
             if (!await queue.launchById(jobId)) {
@@ -124,7 +124,7 @@ export class WebAPIApp {
     }));
 
     app.get("/metrics/basic", asyncHandler(async (req, res) => {
-      res.json(await this.clientPool.use(async (jsjobs) => jsjobs.getBasicMetrics()));
+      res.json(await this.clientPool.use(async (taskbot) => taskbot.getBasicMetrics()));
     }));
 
     app.get("/metrics/dated", asyncHandler(async (req, res) => {
@@ -140,19 +140,19 @@ export class WebAPIApp {
         end = DateTime.fromFormat(req.query.end, LUXON_YMD, { zone: "UTC" });
       }
 
-      const resp: MetricDayRange = await this.clientPool.use(async (jsjobs) => jsjobs.getDatedMetrics(start, end));
+      const resp: MetricDayRange = await this.clientPool.use(async (taskbot) => taskbot.getDatedMetrics(start, end));
       res.json(resp);
     }));
 
     app.get("/metrics/storage", asyncHandler(async (req, res) => {
-      const resp = await this.clientPool.use(async (jsjobs) => jsjobs.getStorageMetrics());
+      const resp = await this.clientPool.use(async (taskbot) => taskbot.getStorageMetrics());
       res.json(resp);
     }));
 
     app.get("/scheduled", asyncHandler(async (req, res) => {
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withScheduledSet(
+          (taskbot) => taskbot.withScheduledSet(
             (scheduledSet) => scheduledSet.peek(req.query.limit, req.query.offset)
           )
         );
@@ -163,7 +163,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
       const resp =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withScheduledSet(
+          (taskbot) => taskbot.withScheduledSet(
             (scheduledSet) => scheduledSet.byId(jobId)
           )
         )
@@ -179,7 +179,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withScheduledSet(
+        (taskbot) => taskbot.withScheduledSet(
           async (scheduledSet) => {
             const ret = await scheduledSet.launchById(jobId);
 
@@ -199,7 +199,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withScheduledSet(
+        (taskbot) => taskbot.withScheduledSet(
           async (scheduledSet) => {
             const jd = await scheduledSet.byId(jobId);
 
@@ -215,7 +215,7 @@ export class WebAPIApp {
     app.get("/retry", asyncHandler(async (req, res) => {
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withRetrySet(
+          (taskbot) => taskbot.withRetrySet(
             (retrySet) => retrySet.peek(req.query.limit, req.query.offset)
           )
         );
@@ -226,7 +226,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
       const resp =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withRetrySet(
+          (taskbot) => taskbot.withRetrySet(
             (retrySet) => retrySet.byId(jobId)
           )
         )
@@ -242,7 +242,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withRetrySet(
+        (taskbot) => taskbot.withRetrySet(
           async (retrySet) => {
             const ret = await retrySet.retryById(jobId);
 
@@ -262,7 +262,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withRetrySet(
+        (taskbot) => taskbot.withRetrySet(
           async (retrySet) => {
             const jd = await retrySet.byId(jobId);
 
@@ -278,7 +278,7 @@ export class WebAPIApp {
     app.get("/dead", asyncHandler(async (req, res) => {
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withDeadSet(
+          (taskbot) => taskbot.withDeadSet(
             (deadSet) => deadSet.peek(req.query.limit, req.query.offset)
           )
         );
@@ -289,7 +289,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
       const resp =
         await this.clientPool.use(
-          (jsjobs) => jsjobs.withDeadSet(
+          (taskbot) => taskbot.withDeadSet(
             (deadSet) => deadSet.byId(jobId)
           )
         )
@@ -305,7 +305,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withDeadSet(
+        (taskbot) => taskbot.withDeadSet(
           async (deadSet) => {
             const ret = await deadSet.resurrectById(jobId);
 
@@ -325,7 +325,7 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (jsjobs) => jsjobs.withDeadSet(
+        (taskbot) => taskbot.withDeadSet(
           async (deadSet) => {
             const jd = await deadSet.byId(jobId);
 

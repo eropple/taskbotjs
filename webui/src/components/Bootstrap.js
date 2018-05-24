@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import * as JSJobsClient from "./JSJobsClient";
+import * as TaskBotJSClient from "./TaskBotJSClient";
 import Spinner from "./Spinner";
 
 export const { Provider, Consumer } = React.createContext(null);
@@ -28,7 +28,7 @@ export class Element extends React.Component {
         }
 
         const bootstrap = await resp.json();
-        const apiClient = JSJobsClient.create(bootstrap.apiBase);
+        const apiClient = TaskBotJSClient.create(bootstrap.apiBase);
 
         this.setState({ bootstrap, apiClient });
       } catch (err) {
@@ -45,9 +45,9 @@ export class Element extends React.Component {
         ? <div>{state.error}</div>
         : state.bootstrap && state.apiClient
             ? <Provider value={state.bootstrap}>
-                <JSJobsClient.Provider value={state.apiClient}>
+                <TaskBotJSClient.Provider value={state.apiClient}>
                   {props.children()}
-                </JSJobsClient.Provider>
+                </TaskBotJSClient.Provider>
               </Provider>
             : <Spinner />
     );

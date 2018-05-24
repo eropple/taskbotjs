@@ -5,7 +5,7 @@ import {
   IDependencies,
   ClientPool,
   ClientRoot
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 
 import { ConfigBase, IntakeConfig } from "../../Config";
 import { ClientRequest } from "http";
@@ -45,18 +45,18 @@ export abstract class Intake<TIntakeConfig extends IntakeConfig> {
     }
 
     this.logger.trace("Fetching.");
-    return this.clientPool.use(async (client) => client.connected ? this.fetch(client) : null);
+    return this.clientPool.use(async (taskbot) => taskbot.connected ? this.fetch(taskbot) : null);
   }
 
   async acknowledge(job: JobDescriptor): Promise<void> {
-    return this.clientPool.use(async (client) => {
-      if (client.requiresAcknowledge) {
+    return this.clientPool.use(async (taskbot) => {
+      if (taskbot.requiresAcknowledge) {
         this.logger.debug({ jobId: job.id }, "Acknowledging.");
-        if (!client.connected) {
+        if (!taskbot.connected) {
           throw new Error("Client not connected during acknowledge; a job may have been orphaned.");
         }
 
-        return client.acknowledgeJob(job);
+        return taskbot.acknowledgeJob(job);
       }
     });
   }

@@ -1,8 +1,8 @@
 {
-  "name": "@jsjobs/webui",
+  "name": "@taskbotjs/webui",
   "version": "0.1.0-rc.1",
   "license": "LGPL-3.0-only",
-  "repository": "github:eropple/jsjobs",
+  "repository": "github:eropple/taskbotjs",
   "dependencies": {
     "@material-ui/core": "^1.0.0-rc.0",
     "@material-ui/icons": "^1.0.0-rc.0",

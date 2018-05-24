@@ -1,7 +1,7 @@
 const Bunyan = require("bunyan");
 const BunyanPrettyStream = require("bunyan-prettystream-circularsafe");
 
-const { Config } = require("@jsjobs/service");
+const { Config } = require("@taskbotjs/service");
 const { NoDeps } = require("../dist/NoDeps");
 
 const { PingJob } = require("../dist/jobs/PingJob");
@@ -20,8 +20,8 @@ const { LongJob } = require("../dist/jobs/LongJob");
 const config = new Config();
 config.redis = {
   options: {
-    url: "redis://oss.dev.jsj:6379",
-    prefix: "jsj-ex/"
+    url: "redis://oss.dev.bot:6379",
+    prefix: "ex/"
   }
 };
 config.intake = {

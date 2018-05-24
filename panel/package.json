@@ -1,11 +1,13 @@
 {
   "private": true,
-  "name": "@jsjobs/panel",
+  "name": "@taskbotjs/panel",
   "version": "0.1.0-wip",
   "license": "LGPL-3.0-only",
   "main": "dist",
-  "bin": {},
-  "repository": "github:eropple/jsjobs",
+  "bin": {
+    "taskbot-panel.js": "./bin/taskbot-panel.js"
+  },
+  "repository": "github:eropple/taskbotjs",
   "scripts": {
     "test": "tslint --project . && jest",
     "build": "tsc",
@@ -16,8 +18,8 @@
     "prepack": "npx ./bin/prepackage.js"
   },
   "dependencies": {
-    "@jsjobs/client": "0.1.0-wip",
-    "@jsjobs/webapi": "0.1.0-wip",
+    "@taskbotjs/client": "0.1.0-wip",
+    "@taskbotjs/webapi": "0.1.0-wip",
     "bunyan": "^1.8.12",
     "commander": "^2.15.1",
     "cors": "^2.8.4",

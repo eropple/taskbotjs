@@ -8,7 +8,7 @@ import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 
 import { withBootstrap } from "./Bootstrap";
-import { withClient } from "./JSJobsClient";
+import { withClient } from "./TaskBotJSClient";
 
 export class Bar extends React.Component {
   render() {
@@ -20,7 +20,7 @@ export class Bar extends React.Component {
                 variant="title"
                 color="default">
               <Link to="/" style={{ textDecoration: "none" }}>
-                JSJobs (WIP!)
+                TaskBotJS (WIP!)
               </Link>
             </Typography>
           </Toolbar>

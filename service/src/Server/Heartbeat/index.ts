@@ -2,7 +2,7 @@ import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
 import { ServerBase } from "..";
-import { ClientPool, WorkerInfo } from "@jsjobs/client";
+import { ClientPool, WorkerInfo } from "@taskbotjs/client";
 import { VERSION, FLAVOR } from "../..";
 
 export class Heartbeat {
@@ -20,7 +20,7 @@ export class Heartbeat {
     this.timeout = setInterval(
       async () => {
         if (!this.isShuttingDown) {
-          this.clientPool.use(async (jsjobs) => jsjobs.updateWorkerInfo(this.buildWorkerInfo()));
+          this.clientPool.use(async (taskbot) => taskbot.updateWorkerInfo(this.buildWorkerInfo()));
         }
       },
       250
@@ -37,7 +37,7 @@ export class Heartbeat {
     }
 
     this.logger.info("Clearing worker from storage.");
-    await this.clientPool.use(async (jsjobs) => jsjobs.clearWorkerInfo(this.server.name));
+    await this.clientPool.use(async (taskbot) => taskbot.clearWorkerInfo(this.server.name));
   }
 
   private buildWorkerInfo(): WorkerInfo {

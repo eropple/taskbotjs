@@ -12,15 +12,15 @@ const { PanelConfig } = require("../dist");
 const config = new PanelConfig();
 config.redis = {
   options: {
-    url: "redis://oss.dev.jsj:6379",
-    prefix: "jsj-ex/"
+    url: "redis://oss.dev.bot:6379",
+    prefix: "ex/"
   }
 };
 
 config.hostWebUI = false;
 
 config.logger = Bunyan.createLogger({
-  name: "jsjobs-panel",
+  name: "taskbotjs-panel",
   level: "info",
   streams: [
     { // comfy development output

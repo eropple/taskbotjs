@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 /**
- * @jsjobs/panel exists to wrap up @jsjobs/webapi and @jsjobs/webui into a
+ * @taskbotjs/panel exists to wrap up @taskbotjs/webapi and @taskbotjs/webui into a
  * single deployable that can be served straight out of NPM.
  *
  * webapi is a direct dependency, and so typescript handles packing that into

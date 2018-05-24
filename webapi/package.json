@@ -1,10 +1,10 @@
 {
   "private": true,
-  "name": "@jsjobs/webapi",
+  "name": "@taskbotjs/webapi",
   "version": "0.1.0-wip",
   "license": "LGPL-3.0-only",
   "main": "dist",
-  "repository": "github:eropple/jsjobs",
+  "repository": "github:eropple/taskbotjs",
   "scripts": {
     "test": "tslint --project . && jest",
     "build": "tsc",
@@ -14,7 +14,7 @@
     "prepush": "npm run test"
   },
   "dependencies": {
-    "@jsjobs/client": "0.1.0-wip",
+    "@taskbotjs/client": "0.1.0-wip",
     "async-lock": "^1.1.2",
     "bunyan": "^1.8.12",
     "bunyan-prettystream-circularsafe": "^0.3.1",

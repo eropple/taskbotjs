@@ -1,11 +1,11 @@
 // This producer simulates (at a very crude level) a service that spins off jobs
-// for a JSJobs consumer to handle.
+// for a TaskBotJS consumer to handle.
 
 import Bunyan from "bunyan";
 import Chance from "chance";
 import sleepAsync from "sleep-promise";
 
-import { Client } from "@jsjobs/client";
+import { Client } from "@taskbotjs/client";
 import { PingJob } from "../jobs/PingJob";
 import { PongJob } from "../jobs/PongJob";
 import { FailJob } from "../jobs/FailJob";
@@ -36,39 +36,39 @@ const logger = Bunyan.createLogger({
   ]
 });
 
-const clientPool = Client.withRedisOptions(logger, { url: "redis://oss.dev.jsj:6379", prefix: "jsj-ex/" });
+const clientPool = Client.withRedisOptions(logger, { url: "redis://oss.dev.bot:6379", prefix: "ex/" });
 
 (async () => {
   while (true) {
     if (chance.integer({ min: 0, max: 100 }) < 20) {
       for (let i = 0; i < chance.integer({ min: 1, max: 20 }); ++i) {
         logger.info("Queueing ping job.");
-        await clientPool.use(async (client) => client.performAsync(PingJob));
+        await clientPool.use(async (taskbot) => taskbot.performAsync(PingJob));
       }
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 20) {
       for (let i = 0; i < chance.integer({ min: 1, max: 20 }); ++i) {
         logger.info("Queueing arg job.");
-        await clientPool.use(async (client) => client.performAsync(ArgJob, chance.integer({ min: 1, max: 100 })));
+        await clientPool.use(async (taskbot) => taskbot.performAsync(ArgJob, chance.integer({ min: 1, max: 100 })));
       }
     }
 
     if (chance.integer({ min: 0, max: 100 }) === 2) {
       logger.info("Queueing fail job.");
-      await clientPool.use(async (client) => client.performAsync(FailJob));
+      await clientPool.use(async (taskbot) => taskbot.performAsync(FailJob));
     }
 
     if (chance.integer({ min: 0, max: 100 }) === 2) {
       logger.info("Queueing long job.");
-      await clientPool.use(async (client) => client.performAsync(LongJob));
+      await clientPool.use(async (taskbot) => taskbot.performAsync(LongJob));
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 15) {
       const t = DateTime.utc().plus({ seconds: 15 });
       for (let i = 0; i < chance.integer({ min: 1, max: 3 }); ++i) {
         logger.info("Queueing a job to be fired in 15 seconds.");
-        await clientPool.use(async (client) => client.performAt(t, FutureJob));
+        await clientPool.use(async (taskbot) => taskbot.performAt(t, FutureJob));
       }
     }
 

@@ -1,7 +1,7 @@
 const Bunyan = require("bunyan");
 const BunyanPrettyStream = require("bunyan-prettystream-circularsafe");
 
-const { WebAPIConfig } = require("@jsjobs/webapi");
+const { WebAPIConfig } = require("@taskbotjs/webapi");
 
 // If this config were TypeScript, it'd be `Config<NoDeps>`; all jobs _should_
 // (though, technically, do not have to) expect the same generic subtype of
@@ -12,15 +12,15 @@ const { WebAPIConfig } = require("@jsjobs/webapi");
 const config = new WebAPIConfig();
 config.redis = {
   options: {
-    url: "redis://oss.dev.jsj:6379",
-    prefix: "jsj-ex/"
+    url: "redis://oss.dev.bot:6379",
+    prefix: "ex/"
   }
 };
 
 config.dependencies = (baseLogger) => new NoDeps(baseLogger);
 
 config.logger = Bunyan.createLogger({
-  name: "jsjobs-webapi",
+  name: "taskbotjs-webapi",
   level: "info",
   streams: [
     // { // comfy development output

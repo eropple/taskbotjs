@@ -1,13 +1,13 @@
 {
   "private": true,
-  "name": "@jsjobs/example",
+  "name": "@taskbotjs/example",
   "version": "0.1.0-wip",
   "license": "MIT",
   "main": "dist",
-  "repository": "github:eropple/jsjobs",
+  "repository": "github:eropple/taskbotjs",
   "scripts": {
     "producer": "node ./dist/producer",
-    "consumer": "../service/bin/jsjobs.js --config-file cfg/example.config.js",
+    "consumer": "../service/bin/taskbot.js --config-file cfg/example.config.js",
     "test": "tslint --project . && jest",
     "build": "tsc",
     "watch": "tsc --watch --preserveWatchOutput",
@@ -16,8 +16,8 @@
     "prepush": "npm run test"
   },
   "dependencies": {
-    "@jsjobs/client": "0.1.0-wip",
-    "@jsjobs/service": "0.1.0-wip",
+    "@taskbotjs/client": "0.1.0-wip",
+    "@taskbotjs/service": "0.1.0-wip",
     "@types/chance": "^1.0.0",
     "bunyan": "^1.8.12",
     "bunyan-prettystream-circularsafe": "^0.3.1",

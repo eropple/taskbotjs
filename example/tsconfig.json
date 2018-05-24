@@ -5,8 +5,8 @@
     "rootDir": "src",
     "outDir": "dist",
     "paths": {
-      "@jsjobs/service": ["../service/dist"],
-      "@jsjobs/client": ["../client/dist"]
+      "@taskbotjs/service": ["../service/dist"],
+      "@taskbotjs/client": ["../client/dist"]
     }
   },
   "include": [

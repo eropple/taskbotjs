@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 
 import { Poller } from "./Poller";
 import { ScheduleConfig } from "../../Config/Config";
-import { ClientRoot } from "@jsjobs/client";
+import { ClientRoot } from "@taskbotjs/client";
 
 export class ScheduledPoller extends Poller<ScheduleConfig> {
   async loopIter(client: ClientRoot): Promise<void> {

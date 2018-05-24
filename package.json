@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@jsjobs/workspace",
+  "name": "@taskbotjs/workspace",
   "version": "0.1.0-wip",
   "scripts": {
     "test": "oao run-script test",

@@ -23,7 +23,7 @@ export function start(args: string[]): void {
 
   program
     .version(packageJson.version)
-    .option("-c, --config-file <path>", "path to the JSJobs config file")
+    .option("-c, --config-file <path>", "path to the TaskBotJS config file")
     .parse(args);
 
   if (!program.configFile) {

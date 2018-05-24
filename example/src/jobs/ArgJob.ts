@@ -2,14 +2,14 @@ import Chance from "chance";
 import sleepAsync from "sleep-promise";
 import { DateTime } from "luxon";
 
-import { Job, IDependencies, constantBackoff, RetryFunctionTimingFunction } from "@jsjobs/client";
+import { Job, IDependencies, constantBackoff, RetryFunctionTimingFunction } from "@taskbotjs/client";
 
 import { NoDeps } from "../NoDeps";
 
 const chance = new Chance();
 
 export class ArgJob extends Job<NoDeps> {
-  static readonly jobName: string = "jsj.arg";
+  static readonly jobName: string = "taskbot.arg";
   static readonly maxRetries = 5;
   static readonly calculateNextRetry: RetryFunctionTimingFunction = constantBackoff(3);
 

@@ -1,7 +1,7 @@
 import Bunyan from "bunyan";
 import sleepAsync from "sleep-promise";
 
-import { ClientRoot, ClientPool } from "@jsjobs/client";
+import { ClientRoot, ClientPool } from "@taskbotjs/client";
 
 import { Config } from "../..";
 import { TimeInterval, RedisClientOptions } from "../../Config";
@@ -40,8 +40,8 @@ export abstract class Poller<TPollerConfig extends PollingConfig> implements IPo
 
     while (!this.isShuttingDown) {
       try {
-        await this.clientPool.use(async (client) => {
-          return this.loopIter(client);
+        await this.clientPool.use(async (taskbot) => {
+          return this.loopIter(taskbot);
         });
       } catch (err) {
         this.logger.error(err, "Error in polling.");

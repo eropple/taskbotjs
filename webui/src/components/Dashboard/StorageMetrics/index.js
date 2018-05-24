@@ -4,7 +4,7 @@ import Paper from "@material-ui/core/Paper";
 import { Typography } from "@material-ui/core";
 
 import Spinner from "../../Spinner";
-import { withClient } from "../../JSJobsClient";
+import { withClient } from "../../TaskBotJSClient";
 import { ticking } from "../../Ticker";
 
 import RedisMetrics from "./RedisMetrics";
@@ -28,7 +28,7 @@ export class StorageMetrics extends React.Component {
     }
   }
 
-  async _fetch(client) {
+  async _fetch(taskbot) {
     try {
       const resp = await client.get("/metrics/storage");
       const storageMetrics = resp.data;

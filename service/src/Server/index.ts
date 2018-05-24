@@ -15,7 +15,7 @@ import {
   ClientPool,
   defaultJobBackoff,
   ClientRoot
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 
 import { Config, ConfigBase } from "../Config";
 import {
@@ -35,7 +35,7 @@ import { VERSION, FLAVOR } from "..";
 const chance = new Chance();
 
 /**
- * The type-erased base class for the JSJobs service.
+ * The type-erased base class for the TaskBotJS service.
  */
 export abstract class ServerBase extends EventEmitter {
   /**
@@ -239,11 +239,11 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     const logger = this.logger.child({ loop: "intake" });
     logger.debug("Entering intake loop.");
 
-    await this.clientPool.use(async (client) => {
+    await this.clientPool.use(async (taskbot) => {
       let connectedLastPass = false;
       while (!this.isShuttingDown) {
         try {
-          if (client.connected) {
+          if (taskbot.connected) {
             if (!connectedLastPass) {
               logger.info("Redis connected.");
               connectedLastPass = true;
@@ -273,11 +273,11 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     const logger = this.logger.child({ loop: "worker" });
     logger.debug("Entering worker handle loop.");
 
-    await this.clientPool.use(async (client) => {
+    await this.clientPool.use(async (taskbot) => {
       while (!this.isShuttingDown) {
         try {
-          if (client.connected) {
-            await this.workerHandleLoopIter(client, logger);
+          if (taskbot.connected) {
+            await this.workerHandleLoopIter(taskbot, logger);
           }
         } catch (err) {
           logger.error(err, "Error during worker handle loop.")
@@ -287,7 +287,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         await sleepFor(this.config.jobPause);
       }
 
-      await this.cleanupWorkersDuringShutdown(client, logger);
+      await this.cleanupWorkersDuringShutdown(taskbot, logger);
     });
 
     this.workerHandleLoopTerminated = true;
@@ -366,7 +366,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     // We've received a shutdown message, and so we need to cancel and
     // requeue any jobs currently occupying job slots that are not yet
     // completed. It is possible that a job will finish despite having
-    // been cleaned up; this is acceptable, however, as JSJobs only
+    // been cleaned up; this is acceptable, however, as TaskBotJS only
     // guarantees _at least once_ execution.
 
     for (let worker of this.activeWorkers.filter((w) => !w.done)) {
@@ -397,10 +397,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     });
 
     for (let newWorker of newWorkers) {
-      const jsjobs = await this.clientPool.acquire();
+      const taskbot = await this.clientPool.acquire();
       newWorker.start(
-        this.config.dependencies(this.baseLogger, jsjobs),
-        async () => this.clientPool.release(jsjobs)
+        this.config.dependencies(this.baseLogger, taskbot),
+        async () => this.clientPool.release(taskbot)
       );
     }
   }

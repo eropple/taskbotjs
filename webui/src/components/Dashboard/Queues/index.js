@@ -11,7 +11,7 @@ import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 
 import Spinner from "../../Spinner";
-import { withClient } from "../../JSJobsClient";
+import { withClient } from "../../TaskBotJSClient";
 import { ticking } from "../../Ticker";
 
 export class Queues extends React.Component {
@@ -33,7 +33,7 @@ export class Queues extends React.Component {
     }
   }
 
-  async _fetch(client) {
+  async _fetch(taskbot) {
     try {
       const resp = await client.get("/queues");
       const queues = resp.data;

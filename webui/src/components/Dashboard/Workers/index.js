@@ -12,7 +12,7 @@ import TableCell from "@material-ui/core/TableCell";
 
 import Spinner from "../../Spinner";
 import { ticking } from "../../Ticker";
-import { withClient } from "../../JSJobsClient";
+import { withClient } from "../../TaskBotJSClient";
 import { formatToRelativeTime } from "../../../util/time";
 import { DateTime } from "luxon";
 
@@ -35,7 +35,7 @@ export class Workers extends React.Component {
     }
   }
 
-  async _fetch(client) {
+  async _fetch(taskbot) {
     try {
       const resp = await client.get("/workers");
       const workers = resp.data;
@@ -81,7 +81,7 @@ export class Workers extends React.Component {
 
     try {
       await client.post("/workers/cleanup");
-      this._fetch(client);
+      this._fetch(taskbot);
     } catch (error) {
       console.error(error);
       this.setState({ error });

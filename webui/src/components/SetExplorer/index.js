@@ -16,7 +16,7 @@ import TableCell from "@material-ui/core/TableCell";
 import Spinner from "../Spinner";
 
 import { ticking } from "../Ticker";
-import { withClient } from "../JSJobsClient";
+import { withClient } from "../TaskBotJSClient";
 
 export class SetExplorer extends React.Component {
   static PAGE_SIZE = 10;

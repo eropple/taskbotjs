@@ -10,7 +10,7 @@ import Grid from "@material-ui/core/Grid";
 import * as qs from "qs";
 
 import Bar from "./Bar";
-import * as JSJobsClient from "./JSJobsClient";
+import * as TaskBotJSClient from "./TaskBotJSClient";
 import Ticker from "./Ticker";
 
 import Dashboard from "./Dashboard";
@@ -141,4 +141,4 @@ export class Main extends React.Component {
   }
 }
 
-export default JSJobsClient.withClient(Main);
+export default TaskBotJSClient.withClient(Main);

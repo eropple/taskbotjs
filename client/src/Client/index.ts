@@ -207,7 +207,7 @@ export class Client extends ClientBase<AsyncRedis> {
   }
 
   fetchJob(queues: ReadonlyArray<string>, timeout?: number): Promise<JobDescriptor | null> {
-    // An early version of JSJobs suffered from queue starvation because
+    // An early version of TaskBotJS suffered from queue starvation because
     // the queues at the top of the *weighted* list always were pulled from
     // first. `this.queueWeights` exists to solve that. We shuffle them so
     // that they are randomly distributed (and thus have different chances of

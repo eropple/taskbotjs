@@ -6,7 +6,7 @@ import { ConfigBase, IntakeConfig } from "../../Config";
 import { Intake, IIntake } from "./Intake";
 
 import { weightedIntakes } from "./WeightedQueueIntake";
-import { IDependencies, ClientPool } from "@jsjobs/client";
+import { IDependencies, ClientPool } from "@taskbotjs/client";
 
 export { Intake, IIntake } from "./Intake";
 

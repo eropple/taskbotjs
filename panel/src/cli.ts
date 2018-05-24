@@ -12,7 +12,7 @@ const packageJson = fs.readJsonSync(`${__dirname}/../../package.json`);
 export function start(args: string[]) {
   program
     .version(packageJson.version)
-    .option("-c, --config-file <path>", "path to the JSJobs Panel config file")
+    .option("-c, --config-file <path>", "path to the TaskBotJS Panel config file")
     .parse(args);
 
   if (!program.configFile) {

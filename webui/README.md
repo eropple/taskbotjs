@@ -1,8 +1,8 @@
-# `@jsjobs/webui` #
+# `@taskbotjs/webui` #
 
 ## Development ##
-You'll need to run a copy of `@jsjobs/panel` to provide this project with its
-backing API. Ordinarily, `@jsjobs/panel` will host a built copy of the webui; if
+You'll need to run a copy of `@taskbotjs/panel` to provide this project with its
+backing API. Ordinarily, `@taskbotjs/panel` will host a built copy of the webui; if
 you start the server with `dev.config.js`, the panel won't host its own copy of
 webui.
 
@@ -12,4 +12,4 @@ why that'd be the case during development), you can do so by setting
 
 Then, before running webui in development mode (as you would any other
 `create-react-app` app), copy `dev.config.json` to `public/config.json` in order
-to point at the API hosted by `@jsjobs/panel`.
+to point at the API hosted by `@taskbotjs/panel`.

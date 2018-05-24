@@ -13,7 +13,7 @@ import Spinner from "../Spinner";
 import JobTable from "../JobTable";
 
 import { ticking } from "../Ticker";
-import { withClient } from "../JSJobsClient";
+import { withClient } from "../TaskBotJSClient";
 
 export class QueueJob extends React.Component {
   static propTypes = {

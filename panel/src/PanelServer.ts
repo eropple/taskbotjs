@@ -3,13 +3,13 @@ import fs from "fs";
 
 import express from "express";
 import cors from "cors";
-import { WebAPIApp, Middleware } from "@jsjobs/webapi";
+import { WebAPIApp, Middleware } from "@taskbotjs/webapi";
 
 import { PanelConfig } from "./PanelConfig";
 
 /**
- * `@jsjobs/panel` mostly exists to weld together `@jsjobs/webapi` and
- * `@jsjobs/webui` into a single distributable. A very simple Express
+ * `@taskbotjs/panel` mostly exists to weld together `@taskbotjs/webapi` and
+ * `@taskbotjs/webui` into a single distributable. A very simple Express
  * server serves both the API and the static resources of the webui,
  * while also handling configuration details for the API so it knows
  * how to find the data store.

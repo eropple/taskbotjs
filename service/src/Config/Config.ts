@@ -19,12 +19,12 @@ import {
   buildRedisPool,
   PoolOptions,
   RetryFunctionTimingFunction
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 
 export type FinalizedConfig<TDependencies extends IDependencies> = DeepReadonly<Config<TDependencies>>;
 export type LoggerFactory = () => Bunyan;
 export type DependenciesFactory<TDependencies extends IDependencies> =
-  (baseLogger: Bunyan, jsjobs: ClientRoot) => TDependencies;
+  (baseLogger: Bunyan, taskbot: ClientRoot) => TDependencies;
 
 export type JobMapping<TDependencies extends IDependencies> = { [s: string]: ConstructableJob<TDependencies> };
 
@@ -161,13 +161,13 @@ export class ConfigBase {
 
   /**
    * The Bunyan-based logger for the application. By default, will create a standard
-   * logger named "jsjobs-server", with no special streams or customization. Adjust to
+   * logger named "taskbotjs-server", with no special streams or customization. Adjust to
    * taste.
    */
-  logger: Bunyan = Bunyan.createLogger({ name: "jsjobs-server" });
+  logger: Bunyan = Bunyan.createLogger({ name: "taskbotjs-server" });
 
   /**
-   * Builds a JSJobs client for the server. This method should be considered internal.
+   * Builds a TaskBotJS client for the server. This method should be considered internal.
    *
    * @private
    */
@@ -183,7 +183,7 @@ export class ConfigBase {
 }
 
 /**
- * The configuration object for the standard, Redis-backed JSJobs service. In TypeScript,
+ * The configuration object for the standard, Redis-backed TaskBotJS service. In TypeScript,
  * it accepts a generic type for dependency injection into your jobs.
  */
 export class Config<TDependencies extends IDependencies> extends ConfigBase {
@@ -192,10 +192,10 @@ export class Config<TDependencies extends IDependencies> extends ConfigBase {
   /**
    * The function that will be used to produce a dependencies object for each job.
    * The default value creates an object that passes only the barest requirements,
-   * the logger and a JSJobs client, to the job.
+   * the logger and a TaskBotJS client, to the job.
    */
   dependencies: DependenciesFactory<TDependencies> =
-    (baseLogger, jsjobs) => ({ baseLogger, jsjobs } as TDependencies);
+    (baseLogger, taskbot) => ({ baseLogger, taskbot } as TDependencies);
 
   /**
    * Creates a shallow clone of this object, with one exception: the logger that is a

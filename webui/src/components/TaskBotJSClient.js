@@ -12,7 +12,7 @@ export function create(baseUrl) {
 
 export function withClient(ComponentType) {
   return class extends React.Component {
-    static get name() { return `JSJobsClient(${ComponentType.name})`; }
+    static get name() { return `TaskBotJSClient(${ComponentType.name})`; }
 
     render() {
       return (

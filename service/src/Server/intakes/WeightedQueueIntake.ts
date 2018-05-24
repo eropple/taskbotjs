@@ -18,7 +18,7 @@ import {
   Client,
   ClientPool,
   ClientRoot
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 
 export function weightedIntakes(
   config: ConfigBase, clientPool: ClientPool, baseLogger: Bunyan

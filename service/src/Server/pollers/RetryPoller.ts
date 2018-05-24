@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 
 import { Poller } from "./Poller";
 import { RetryConfig } from "../../Config/Config";
-import { ClientRoot } from "@jsjobs/client";
+import { ClientRoot } from "@taskbotjs/client";
 
 export class RetryPoller extends Poller<RetryConfig> {
   async loopIter(client: ClientRoot): Promise<void> {

@@ -7,7 +7,7 @@ import {
   PoolOptions,
   ClientPool,
   Client
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 
 export interface RedisOptions {
   options: RedisClientOptions;
@@ -18,7 +18,7 @@ export class PanelConfig {
   /**
    * The Bunyan logger that should be used by the entire application.
    */
-  logger: Bunyan = Bunyan.createLogger({ name: "jsjobs-panel" });
+  logger: Bunyan = Bunyan.createLogger({ name: "taskbotjs-panel" });
 
   /**
    * The HTTP port to listen on.

@@ -2,7 +2,7 @@ import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
 import { ServerBase } from "..";
-import { ClientPool, JobDescriptor, LUXON_YMD } from "@jsjobs/client";
+import { ClientPool, JobDescriptor, LUXON_YMD } from "@taskbotjs/client";
 
 export class Metrics {
   private readonly logger: Bunyan;
@@ -18,9 +18,9 @@ export class Metrics {
       const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/processed";
       const dateKey = "metrics/processed/" + date;
-      await this.clientPool.use(async (jsjobs) => {
-        await jsjobs.incrementCounter(allKey);
-        await jsjobs.incrementCounter(dateKey);
+      await this.clientPool.use(async (taskbot) => {
+        await taskbot.incrementCounter(allKey);
+        await taskbot.incrementCounter(dateKey);
       });
     });
 
@@ -28,9 +28,9 @@ export class Metrics {
       const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/errored";
       const dateKey = "metrics/errored/" + date;
-      await this.clientPool.use(async (jsjobs) => {
-        await jsjobs.incrementCounter(allKey);
-        await jsjobs.incrementCounter(dateKey);
+      await this.clientPool.use(async (taskbot) => {
+        await taskbot.incrementCounter(allKey);
+        await taskbot.incrementCounter(dateKey);
       });
     });
 
@@ -38,9 +38,9 @@ export class Metrics {
       const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/died";
       const dateKey = "metrics/died/" + date;
-      await this.clientPool.use(async (jsjobs) => {
-        await jsjobs.incrementCounter(allKey);
-        await jsjobs.incrementCounter(dateKey);
+      await this.clientPool.use(async (taskbot) => {
+        await taskbot.incrementCounter(allKey);
+        await taskbot.incrementCounter(dateKey);
       });
     });
   }

@@ -60,7 +60,7 @@ export class Job<TDependencies extends IDependencies> extends JobBase {
 
   protected readonly deps: TDependencies;
 
-  protected get jsjobs() { return this.deps.jsjobs; }
+  protected get taskbot() { return this.deps.taskbot; }
 
   constructor(deps: TDependencies, descriptor?: JobDescriptor) {
     super(deps.baseLogger, descriptor);

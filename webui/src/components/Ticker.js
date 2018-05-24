@@ -58,7 +58,7 @@ export default class Ticker extends React.Component {
 
 export function ticking(ComponentType) {
   return class extends React.Component {
-    static get name() { return `JSJobsClient(${ComponentType.name})`; }
+    static get name() { return `TaskBotJSClient(${ComponentType.name})`; }
 
     render() {
       return (

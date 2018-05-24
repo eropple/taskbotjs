@@ -5,7 +5,7 @@ import { DeepReadonly } from "deep-freeze";
 
 import {
   JobDescriptor, IDependencies, Job, ConstructableJob, ClientRoot
-} from "@jsjobs/client";
+} from "@taskbotjs/client";
 import { JobMapping } from "../Config";
 
 export class Worker<TDependencies extends IDependencies> {
