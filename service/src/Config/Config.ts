@@ -22,6 +22,7 @@ import {
 } from "@taskbotjs/client";
 
 import { ConstructableServerPlugin } from "../ServerPlugin";
+import { Duration } from "luxon";
 
 export type FinalizedConfig<TDependencies extends IDependencies> = DeepReadonly<Config<TDependencies>>;
 export type LoggerFactory = () => Bunyan;
@@ -29,6 +30,22 @@ export type DependenciesFactory<TDependencies extends IDependencies> =
   (baseLogger: Bunyan, taskbot: ClientRoot) => TDependencies;
 
 export type JobMapping<TDependencies extends IDependencies> = { [s: string]: ConstructableJob<TDependencies> };
+
+/**
+ * A type-lifted version of the important bits of Luxon's `Duration.fromObject()`,
+ * which is used in our `TimeInterval` class.
+ */
+export type DurationFields = {
+  years?: number,
+  quarters?: number,
+  months?: number,
+  weeks?: number,
+  days?: number,
+  hours?: number,
+  minutes?: number,
+  seconds?: number,
+  milliseconds?: number
+};
 
 /**
  * The various queue intakes are configured through inheritors of this
@@ -59,19 +76,18 @@ export interface WeightedQueueConfig {
 /**
  * A measure of time for use in the sleep between instances of polling. The idea
  * is that there's an expected interval, modifies by the splay parameter, to
- * avoid thundering herds. For example, an interval of 1.0 and a splay of 0.1
- * shall cause each poller to pause for a random duration between 0.9 and 1.1
- * seconds.
+ * avoid thundering herds.
  */
 export interface TimeInterval {
   /**
-   * The baseline amount of time this interval expresses, in seconds.
+   * The baseline amount of time this interval expresses.
    */
-  interval: number;
+  interval: DurationFields | Duration;
   /**
-   * The maximum divergence from the interval, in seconds.
+   * The maximum divergence from the interval's center. Generates a (theoretically)
+   * uniform distribution from (interval - splay) to (interval + splay).
    */
-  splay: number;
+  splay: DurationFields | Duration;
 }
 
 export interface PluginConfig {
@@ -141,19 +157,28 @@ export class ConfigBase {
   /**
    * Period of time to pause after each intake pass.
    */
-  intakePause: TimeInterval = { interval: 0.005, splay: 0 };
+  intakePause: TimeInterval = {
+    interval: Duration.fromObject({ milliseconds: 5 }),
+    splay: Duration.fromObject({})
+  };
 
   /**
    * Period of time to pause after checking all workers for completion.
    */
-  jobPause: TimeInterval = { interval: 0.005, splay: 0 };
+  jobPause: TimeInterval = {
+    interval: Duration.fromObject({milliseconds: 5 }),
+    splay: Duration.fromObject({})
+  };
 
   /**
    * Configuration for the retry poller.
    */
   retry: RetryConfig = {
     enabled: true,
-    polling: { interval: 1, splay: 0.1 }
+    polling: {
+      interval: Duration.fromObject({ seconds: 1 }),
+      splay: Duration.fromObject({ milliseconds: 100 })
+    }
   };
 
   /**
@@ -161,7 +186,10 @@ export class ConfigBase {
    */
   schedule: ScheduleConfig = {
     enabled: true,
-    polling: { interval: 1, splay: 0.1 }
+    polling: {
+      interval: Duration.fromObject({ seconds: 1 }),
+      splay: Duration.fromObject({ milliseconds: 100 })
+    }
   };
 
   /**

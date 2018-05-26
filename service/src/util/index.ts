@@ -1,10 +1,10 @@
 import sleepAsync from "sleep-promise";
 
 import { TimeInterval } from "../Config";
-import { floatWithinInterval } from "./random";
+import { intervalSplayDuration } from "./random";
 
 export async function sleepFor(p: TimeInterval): Promise<void> {
-  return sleepAsync(floatWithinInterval(p.interval, p.splay) * 1000);
+  return sleepAsync(intervalSplayDuration(p.interval, p.splay).shiftTo("seconds").seconds);
 }
 
 export async function yieldExecution(): Promise<void> {
