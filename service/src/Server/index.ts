@@ -477,7 +477,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       } else {
         descriptor.status.success = false;
         delete descriptor.status.nextRetryAt;
-        await client.deadSet.add(descriptor);
+        await Promise.all([
+          client.deadSet.add(descriptor),
+          client.acknowledgeQueueJob(descriptor, this.name)
+        ]);
         this.emit(this.onJobDeath, descriptor);
       }
     } else {
@@ -497,7 +500,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         },
         `Job has retries remaining; computing next retry and placing in retry set (${delta}s from now).`);
 
-      await client.retrySet.add(descriptor);
+        await Promise.all([
+          client.retrySet.add(descriptor),
+          client.acknowledgeQueueJob(descriptor, this.name)
+        ]);
       this.emit(this.onJobRetryQueued, descriptor);
     }
   }
