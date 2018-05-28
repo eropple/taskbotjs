@@ -338,7 +338,7 @@ export class Client extends ClientBase<AsyncRedis> {
     });
   }
 
-  async acknowledgeQueueJob(JobDescriptor: JobDescriptor, workerName: string): Promise<void> {
+  async acknowledgeQueueJob(jd: JobDescriptor, workerName: string): Promise<void> {
 
   }
 
