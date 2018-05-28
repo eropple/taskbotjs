@@ -14,7 +14,6 @@ export interface IIntake {
   initialize(): void;
   stop(): void;
   doFetch(): Promise<JobDescriptor | null>;
-  acknowledge(job: JobDescriptor): Promise<void>;
 }
 
 export abstract class Intake<TIntakeConfig extends IntakeConfig> {
@@ -46,19 +45,6 @@ export abstract class Intake<TIntakeConfig extends IntakeConfig> {
 
     this.logger.trace("Fetching.");
     return this.clientPool.use(async (taskbot) => taskbot.connected ? this.fetch(taskbot) : null);
-  }
-
-  async acknowledge(job: JobDescriptor): Promise<void> {
-    return this.clientPool.use(async (taskbot) => {
-      if (taskbot.requiresAcknowledge) {
-        this.logger.debug({ jobId: job.id }, "Acknowledging.");
-        if (!taskbot.connected) {
-          throw new Error("Client not connected during acknowledge; a job may have been orphaned.");
-        }
-
-        return taskbot.acknowledgeQueueJob(job);
-      }
-    });
   }
 
   abstract async fetch(client: ClientRoot): Promise<JobDescriptor | null>;

@@ -103,7 +103,7 @@ export abstract class ClientRoot {
   abstract async getStorageMetrics(): Promise<StorageInfo>;
 
   abstract async fetchQueueJob(queues: Array<string>, timeout?: number): Promise<JobDescriptor | null>;
-  abstract async acknowledgeQueueJob(JobDescriptor: JobDescriptor): Promise<void>;
+  abstract async acknowledgeQueueJob(JobDescriptor: JobDescriptor, workerName: string): Promise<void>;
 }
 
 export abstract class ClientBase<TStorage> extends ClientRoot {

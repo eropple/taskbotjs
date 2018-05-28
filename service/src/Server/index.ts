@@ -394,7 +394,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
         await Promise.all([
           client.doneSet.add(worker.descriptor),
-          this.intake.acknowledge(worker.descriptor)
+          client.acknowledgeQueueJob(worker.descriptor, this.name)
         ]);
       } else {
         // Once we've got a failure, we need to:

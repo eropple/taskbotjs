@@ -338,7 +338,9 @@ export class Client extends ClientBase<AsyncRedis> {
     });
   }
 
-  async acknowledgeQueueJob(JobDescriptor: JobDescriptor): Promise<void> {}
+  async acknowledgeQueueJob(JobDescriptor: JobDescriptor, workerName: string): Promise<void> {
+
+  }
 
   private async scanAll<T>(pattern: string, count: number = 10): Promise<Array<string>> {
     const data: Array<Array<string>> = [];
