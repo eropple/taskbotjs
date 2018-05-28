@@ -1,12 +1,12 @@
 import { DateTime } from "luxon";
 
 import {
-  ClientRoot
+  ClientRoot,
+  ICleanableSet
 } from "@taskbotjs/client";
 
 import { JanitorConfig } from "../../Config/Config";
 import { ServerPoller } from "../../ServerPoller";
-import { ICleanableSet } from "../../../../client/dist/ClientBase/ISortedSet";
 import { intervalSplayDuration } from "../../util/random";
 
 export class JanitorPoller extends ServerPoller<JanitorConfig> {
