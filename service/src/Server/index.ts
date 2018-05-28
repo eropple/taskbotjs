@@ -170,7 +170,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     this.metrics = new Metrics(this.baseLogger, this);
     this.heartbeat = new Heartbeat(this.baseLogger, this);
-    this.intake = buildIntake(this.config, this.clientPool, this.logger);
+    this.intake = buildIntake(this.config, this, this.logger);
 
     this.retryPoller = new RetryPoller(this.baseLogger, this);
     this.scheduledPoller = new ScheduledPoller(this.baseLogger, this);
@@ -394,7 +394,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
         await Promise.all([
           client.doneSet.add(worker.descriptor),
-          client.acknowledgeQueueJob(worker.descriptor, this.name)
+          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(worker.descriptor, this.name) : null
         ]);
       } else {
         // Once we've got a failure, we need to:
@@ -479,7 +479,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         delete descriptor.status.nextRetryAt;
         await Promise.all([
           client.deadSet.add(descriptor),
-          client.acknowledgeQueueJob(descriptor, this.name)
+          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(descriptor, this.name) : null
         ]);
         this.emit(this.onJobDeath, descriptor);
       }
@@ -502,7 +502,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
         await Promise.all([
           client.retrySet.add(descriptor),
-          client.acknowledgeQueueJob(descriptor, this.name)
+          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(descriptor, this.name) : null
         ]);
       this.emit(this.onJobRetryQueued, descriptor);
     }

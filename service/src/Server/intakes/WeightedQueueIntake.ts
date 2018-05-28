@@ -19,15 +19,16 @@ import {
   ClientPool,
   ClientRoot
 } from "@taskbotjs/client";
+import { ServerBase } from "..";
 
 export function weightedIntakes(
-  config: ConfigBase, clientPool: ClientPool, baseLogger: Bunyan
+  config: ConfigBase, server: ServerBase, baseLogger: Bunyan
 ): WeightedJobIntake | null {
   if (config.intake.type !== "weighted") {
     return null;
   } else {
     const intake = config.intake as WeightedQueueIntakeConfig;
-    return new WeightedJobIntake(intake, clientPool, baseLogger);
+    return new WeightedJobIntake(intake, server, baseLogger);
   }
 }
 
@@ -43,12 +44,11 @@ function weightsFromQueues(queues: ReadonlyArray<WeightedQueueConfig>): Readonly
 }
 
 export class WeightedJobIntake extends Intake<WeightedQueueIntakeConfig> {
-  protected readonly intakeConfig: WeightedQueueIntakeConfig;
   protected readonly timeoutSeconds: number;
   protected readonly queueWeights: ReadonlyArray<string>;
 
-  constructor(intakeConfig: WeightedQueueIntakeConfig, clientPool: ClientPool, baseLogger: Bunyan) {
-    super(intakeConfig, clientPool, baseLogger);
+  constructor(intakeConfig: WeightedQueueIntakeConfig, server: ServerBase, baseLogger: Bunyan) {
+    super(intakeConfig, server, baseLogger);
 
     this.timeoutSeconds = Math.floor(intakeConfig.timeoutSeconds || 15);
     this.queueWeights = weightsFromQueues(intakeConfig.queues);

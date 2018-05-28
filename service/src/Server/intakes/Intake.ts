@@ -9,24 +9,29 @@ import {
 
 import { ConfigBase, IntakeConfig } from "../../Config";
 import { ClientRequest } from "http";
+import { ServerBase } from "..";
 
 export interface IIntake {
+  readonly requireAcknowledgment: boolean;
+
   initialize(): void;
   stop(): void;
   doFetch(): Promise<JobDescriptor | null>;
 }
 
 export abstract class Intake<TIntakeConfig extends IntakeConfig> {
-  protected readonly intakeConfig: TIntakeConfig;
   protected readonly logger: Bunyan;
-  protected readonly clientPool: ClientPool;
 
   private isStopped: boolean = false;
 
-  constructor(intakeConfig: TIntakeConfig, clientPool: ClientPool, baseLogger: Bunyan) {
-    this.intakeConfig = intakeConfig;
-    this.clientPool = clientPool;
+  constructor(protected readonly intakeConfig: TIntakeConfig, protected readonly server: ServerBase, baseLogger: Bunyan) {
     this.logger = baseLogger.child({ component: this.constructor.name });
+  }
+
+  protected get clientPool(): ClientPool { return this.server.clientPool; }
+
+  get requireAcknowledgment(): boolean {
+    return false;
   }
 
   initialize(): void {
