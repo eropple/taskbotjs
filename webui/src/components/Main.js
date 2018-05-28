@@ -65,7 +65,7 @@ export class Main extends React.Component {
                         (route) => {
                           const { pageNumber } = route.match.params;
 
-                          return <SetExplorer setName="retry" pageNumber={parseInt(pageNumber, 10)} />;
+                          return <SetExplorer setName="retry" canLaunch={true} pageNumber={parseInt(pageNumber, 10)} />;
                         }
                       } />
                       <Route exact path="/retry/jobs/:jobId" render={
@@ -78,7 +78,7 @@ export class Main extends React.Component {
                             pageHint = parseInt(pageHint, 10);
                           }
 
-                          return <SetJob setName="retry" jobId={jobId} pageHint={pageHint} />;
+                          return <SetJob setName="retry" canLaunch={true} jobId={jobId} pageHint={pageHint} />;
                         }
                       } />
 
@@ -89,7 +89,7 @@ export class Main extends React.Component {
                         (route) => {
                           const { pageNumber } = route.match.params;
 
-                          return <SetExplorer setName="scheduled" pageNumber={parseInt(pageNumber, 10)} />;
+                          return <SetExplorer setName="scheduled" canLaunch={true} pageNumber={parseInt(pageNumber, 10)} />;
                         }
                       } />
                       <Route exact path="/scheduled/jobs/:jobId" render={
@@ -102,7 +102,31 @@ export class Main extends React.Component {
                             pageHint = parseInt(pageHint, 10);
                           }
 
-                          return <SetJob setName="scheduled" jobId={jobId} pageHint={pageHint} />;
+                          return <SetJob setName="scheduled" canLaunch={true} jobId={jobId} pageHint={pageHint} />;
+                        }
+                      } />
+
+                      <Route exact path="/done" render={
+                        (route) => <Redirect to={"/done/page/1"} />
+                      } />
+                      <Route exact path="/done/page/:pageNumber" render={
+                        (route) => {
+                          const { pageNumber } = route.match.params;
+
+                          return <SetExplorer setName="done" canLaunch={false} pageNumber={parseInt(pageNumber, 10)} />;
+                        }
+                      } />
+                      <Route exact path="/done/jobs/:jobId" render={
+                        (route) => {
+                          const { jobId } = route.match.params;
+                          const queryParams = qs.parse(route.location.search.substr(1));
+                          let { pageHint } = queryParams;
+
+                          if (pageHint) {
+                            pageHint = parseInt(pageHint, 10);
+                          }
+
+                          return <SetJob setName="done" canLaunch={false} jobId={jobId} pageHint={pageHint} />;
                         }
                       } />
 
@@ -113,7 +137,7 @@ export class Main extends React.Component {
                         (route) => {
                           const { pageNumber } = route.match.params;
 
-                          return <SetExplorer setName="dead" pageNumber={parseInt(pageNumber, 10)} />;
+                          return <SetExplorer setName="dead" canLaunch={true} pageNumber={parseInt(pageNumber, 10)} />;
                         }
                       } />
                       <Route exact path="/dead/jobs/:jobId" render={
@@ -126,9 +150,10 @@ export class Main extends React.Component {
                             pageHint = parseInt(pageHint, 10);
                           }
 
-                          return <SetJob setName="dead" jobId={jobId} pageHint={pageHint} />;
+                          return <SetJob setName="dead" canLaunch={true} jobId={jobId} pageHint={pageHint} />;
                         }
                       } />
+
                       <Route component={NotFound} />
                     </Switch>
                   </Grid>

@@ -16,6 +16,6 @@ export class ArgJob extends Job<NoDeps> {
   async perform(arg: number): Promise<void> {
     const interval = Math.max(25, Math.round(chance.normal({mean: 300, dev: 250})));
     await sleepAsync(interval);
-    this.logger.info({ arg}, `I have an arg: ${arg}`);
+    this.logger.debug({ arg}, `I have an arg: ${arg}`);
   }
 }

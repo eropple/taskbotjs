@@ -17,6 +17,7 @@ import {
 import { APIError, NotFoundError } from "./APIError";
 import * as Middleware from "./Middleware";
 import { PingResponse } from "./Responses";
+import { runInThisContext } from "vm";
 
 export class WebAPIApp {
   readonly expressApp: express.Express;
@@ -78,10 +79,10 @@ export class WebAPIApp {
 
       const resp: JobDescriptor | null =
         await this.clientPool.use(
-          (taskbot) => taskbot.withQueue(
-            queueName,
-            (queue) => queue.byId(jobId)
-          )
+          async (taskbot) => {
+            const queue = taskbot.queue(queueName);
+            return queue.find((jd) => jd.id === jobId);
+          }
         );
 
       if (!resp) {
@@ -98,7 +99,7 @@ export class WebAPIApp {
       await this.clientPool.use(
         (taskbot) => taskbot.withQueue(
           queueName,
-          (queue) => queue.removeById(jobId)
+          (queue) => queue.remove(jobId)
         )
       );
 
@@ -113,7 +114,7 @@ export class WebAPIApp {
         (taskbot) => taskbot.withQueue(
           queueName,
           async (queue) => {
-            if (!await queue.launchById(jobId)) {
+            if (!await queue.launch(jobId)) {
               throw new NotFoundError(`Job '${jobId}' not pushed to head. It may have already been processed.`);
             }
           }
@@ -152,21 +153,21 @@ export class WebAPIApp {
     app.get("/scheduled", asyncHandler(async (req, res) => {
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (taskbot) => taskbot.withScheduledSet(
-            (scheduledSet) => scheduledSet.peek(req.query.limit, req.query.offset)
-          )
-        );
+          (taskbot) => taskbot.scheduleSet.peek(req.query.limit, req.query.offset));
       res.json(resp);
     }));
 
     app.get("/scheduled/:jobId", asyncHandler(async (req, res) => {
       const jobId = req.params.jobId;
-      const resp =
+      const resp: JobDescriptor | null =
         await this.clientPool.use(
-          (taskbot) => taskbot.withScheduledSet(
-            (scheduledSet) => scheduledSet.byId(jobId)
-          )
-        )
+          async (taskbot) => {
+            if (await taskbot.scheduleSet.contains(jobId)) {
+              return taskbot.readJob(jobId);
+            }
+
+            return null;
+          });
 
       if (!resp) {
         throw new NotFoundError(`Job '${jobId}' not found.`);
@@ -178,19 +179,12 @@ export class WebAPIApp {
     app.post("/scheduled/:jobId/launch", asyncHandler(async (req, res) => {
       const jobId = req.params.jobId;
 
-      await this.clientPool.use(
-        (taskbot) => taskbot.withScheduledSet(
-          async (scheduledSet) => {
-            const ret = await scheduledSet.launchById(jobId);
+      const ret = await this.clientPool.use(
+        (taskbot) => taskbot.scheduleSet.launch(jobId));
 
-            if (!ret) {
-              throw new NotFoundError(`Job '${jobId}' not found. Possibly already out of the set.`);
-            }
-
-            return ret;
-          }
-        )
-      )
+      if (!ret) {
+        throw new NotFoundError(`Job '${jobId}' not found. Possibly already out of the set.`);
+      }
 
       res.json({ ok: true });
     }));
@@ -199,37 +193,33 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (taskbot) => taskbot.withScheduledSet(
-          async (scheduledSet) => {
-            const jd = await scheduledSet.byId(jobId);
+        async (taskbot) => {
+          await taskbot.scheduleSet.remove(jobId);
+          await taskbot.unsafeDeleteJob(jobId);
+        });
 
-            if (jd) {
-              await scheduledSet.remove(jd);
-            }
-          }
-        )
-      );
       res.json({ ok: true });
     }));
 
     app.get("/retry", asyncHandler(async (req, res) => {
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (taskbot) => taskbot.withRetrySet(
-            (retrySet) => retrySet.peek(req.query.limit, req.query.offset)
-          )
-        );
+          (taskbot) => taskbot.retrySet.peek(req.query.limit, req.query.offset));
+
       res.json(resp);
     }));
 
     app.get("/retry/:jobId", asyncHandler(async (req, res) => {
       const jobId = req.params.jobId;
-      const resp =
+      const resp: JobDescriptor | null =
         await this.clientPool.use(
-          (taskbot) => taskbot.withRetrySet(
-            (retrySet) => retrySet.byId(jobId)
-          )
-        )
+          async (taskbot) => {
+            if (await taskbot.retrySet.contains(jobId)) {
+              return taskbot.readJob(jobId);
+            }
+
+            return null;
+          });
 
       if (!resp) {
         throw new NotFoundError(`Job '${jobId}' not found.`);
@@ -241,19 +231,12 @@ export class WebAPIApp {
     app.post("/retry/:jobId/launch", asyncHandler(async (req, res) => {
       const jobId = req.params.jobId;
 
-      await this.clientPool.use(
-        (taskbot) => taskbot.withRetrySet(
-          async (retrySet) => {
-            const ret = await retrySet.retryById(jobId);
+      const ret = await this.clientPool.use(
+        (taskbot) => taskbot.retrySet.retry(jobId));
 
-            if (!ret) {
-              throw new NotFoundError(`Job '${jobId}' not found. Possibly already out of the set.`);
-            }
-
-            return ret;
-          }
-        )
-      )
+      if (!ret) {
+        throw new NotFoundError(`Job '${jobId}' not found. Possibly already out of the set.`);
+      }
 
       res.json({ ok: true });
     }));
@@ -262,37 +245,38 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (taskbot) => taskbot.withRetrySet(
-          async (retrySet) => {
-            const jd = await retrySet.byId(jobId);
+        async (taskbot) => {
+          await taskbot.retrySet.remove(jobId);
+          await taskbot.unsafeDeleteJob(jobId);
+        });
 
-            if (jd) {
-              await retrySet.remove(jd);
-            }
-          }
-        )
-      );
       res.json({ ok: true });
     }));
 
     app.get("/dead", asyncHandler(async (req, res) => {
       const resp: Array<JobDescriptor> =
         await this.clientPool.use(
-          (taskbot) => taskbot.withDeadSet(
-            (deadSet) => deadSet.peek(req.query.limit, req.query.offset)
-          )
-        );
+          (taskbot) => taskbot.deadSet.peek(req.query.limit, req.query.offset));
       res.json(resp);
+    }));
+
+    app.post("/dead/clean", asyncHandler(async (req, res) => {
+      const count = await this.clientPool.use((taskbot) => taskbot.deadSet.cleanAll());
+
+      res.json({ ok: true, count });
     }));
 
     app.get("/dead/:jobId", asyncHandler(async (req, res) => {
       const jobId = req.params.jobId;
-      const resp =
+      const resp: JobDescriptor | null =
         await this.clientPool.use(
-          (taskbot) => taskbot.withDeadSet(
-            (deadSet) => deadSet.byId(jobId)
-          )
-        )
+          async (taskbot) => {
+            if (await taskbot.deadSet.contains(jobId)) {
+              return taskbot.readJob(jobId);
+            }
+
+            return null;
+          });
 
       if (!resp) {
         throw new NotFoundError(`Job '${jobId}' not found.`);
@@ -304,19 +288,12 @@ export class WebAPIApp {
     app.post("/dead/:jobId/launch", asyncHandler(async (req, res) => {
       const jobId = req.params.jobId;
 
-      await this.clientPool.use(
-        (taskbot) => taskbot.withDeadSet(
-          async (deadSet) => {
-            const ret = await deadSet.resurrectById(jobId);
+      const ret = await this.clientPool.use(
+        (taskbot) => taskbot.deadSet.resurrect(jobId));
 
-            if (!ret) {
-              throw new NotFoundError(`Job '${jobId}' not found. Possibly already out of the set.`);
-            }
-
-            return ret;
-          }
-        )
-      )
+      if (!ret) {
+        throw new NotFoundError(`Job '${jobId}' not found. Possibly already out of the set.`);
+      }
 
       res.json({ ok: true });
     }));
@@ -325,16 +302,55 @@ export class WebAPIApp {
       const jobId = req.params.jobId;
 
       await this.clientPool.use(
-        (taskbot) => taskbot.withDeadSet(
-          async (deadSet) => {
-            const jd = await deadSet.byId(jobId);
+        async (taskbot) => {
+          await taskbot.deadSet.remove(jobId);
+          await taskbot.unsafeDeleteJob(jobId);
+        });
 
-            if (jd) {
-              await deadSet.remove(jd);
+      res.json({ ok: true });
+    }));
+
+    app.get("/done", asyncHandler(async (req, res) => {
+      const resp: Array<JobDescriptor> =
+        await this.clientPool.use(
+          (taskbot) => taskbot.doneSet.peek(req.query.limit, req.query.offset));
+      res.json(resp);
+    }));
+
+    app.post("/done/clean", asyncHandler(async (req, res) => {
+      const count = await this.clientPool.use((taskbot) => taskbot.doneSet.cleanAll());
+
+      res.json({ ok: true, count });
+    }));
+
+    app.get("/done/:jobId", asyncHandler(async (req, res) => {
+      const jobId = req.params.jobId;
+      const resp: JobDescriptor | null =
+        await this.clientPool.use(
+          async (taskbot) => {
+            if (await taskbot.doneSet.contains(jobId)) {
+              return taskbot.readJob(jobId);
             }
-          }
-        )
-      );
+
+            return null;
+          });
+
+      if (!resp) {
+        throw new NotFoundError(`Job '${jobId}' not found.`);
+      } else {
+        res.json(resp);
+      }
+    }));
+
+    app.delete("/done/:jobId", asyncHandler(async (req, res) => {
+      const jobId = req.params.jobId;
+
+      await this.clientPool.use(
+        async (taskbot) => {
+          await taskbot.doneSet.remove(jobId);
+          await taskbot.unsafeDeleteJob(jobId);
+        });
+
       res.json({ ok: true });
     }));
 

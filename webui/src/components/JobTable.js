@@ -126,13 +126,11 @@ export default class JobTable extends React.Component {
                                 <Typography variant="body2">Error</Typography>
                               </TableCell>
                               <TableCell>
-                                <Typography variant="body1">
-                                  <pre>
-                                    {job.status.error.message}
+                                <pre>
+                                  {job.status.error.message}
 
-                                    {(job.status.error.backtrace || []).join("\n")}
-                                  </pre>
-                                </Typography>
+                                  {(job.status.error.backtrace || []).join("\n")}
+                                </pre>
                               </TableCell>
                             </TableRow>
                           : null

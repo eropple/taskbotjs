@@ -9,12 +9,12 @@ import { Job, optionsFor, generateJobId, ConstructableJob } from "../Job";
 import { JobDescriptor, JobDescriptorOptions } from "../JobMetadata";
 import { IQueue } from "./IQueue";
 
-import { IRetries, IDead, IScheduled } from "./ISet";
 import { JobBase } from "../Job/Job";
 import { ConstructableJobBase } from "../Job/ConstructableJob";
 import { ICounter, IScalar, WorkerInfo, MetricDayRange } from "..";
 import { QueueInfo, StorageInfo, BasicMetrics } from "../domain";
-export { IRetries, IDead, IScheduled } from "./ISet";
+import { IRetries, IDead, IScheduled, IDone } from "./ISortedSet";
+export { IRetries, IDead, IScheduled } from "./ISortedSet";
 
 const chance = new Chance();
 
@@ -53,6 +53,12 @@ export abstract class ClientRoot {
   abstract get connected(): boolean;
   readonly requiresAcknowledge: boolean;
 
+  abstract get retrySet(): IRetries;
+  abstract get scheduleSet(): IScheduled;
+  abstract get deadSet(): IDead;
+  abstract get doneSet(): IDone;
+  abstract queue(queueName: string): IQueue;
+
   async performAsync(jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
     // TypeScript dsallows default arguments in abstract class methods or interface methods, so...
     return this.doPerformAsync(jobType, args, null);
@@ -76,10 +82,16 @@ export abstract class ClientRoot {
   abstract async incrementCounter(counterName: string): Promise<number>;
   abstract async withCounter<T>(counterName: string, fn: (counter: ICounter) => Promise<T>): Promise<T>;
 
+  abstract async updateJob(descriptor: JobDescriptor): Promise<void>;
+  abstract async readJob(id: string): Promise<JobDescriptor | null>;
+  abstract async readJobs(ids: Array<string>): Promise<Array<JobDescriptor | null>>;
+  abstract async unsafeDeleteJob(id: string): Promise<void>;
+
   abstract async withQueue<T>(queueName: string, fn: (queue: IQueue) => Promise<T>): Promise<T>;
   abstract async withRetrySet<T>(fn: (retry: IRetries) => Promise<T>): Promise<T>;
-  abstract async withScheduledSet<T>(fn: (retry: IScheduled) => Promise<T>): Promise<T>;
-  abstract async withDeadSet<T>(fn: (retry: IDead) => Promise<T>): Promise<T>;
+  abstract async withScheduledSet<T>(fn: (scheduled: IScheduled) => Promise<T>): Promise<T>;
+  abstract async withDeadSet<T>(fn: (dead: IDead) => Promise<T>): Promise<T>;
+  abstract async withDoneSet<T>(fn: (done: IDone) => Promise<T>): Promise<T>;
 
   abstract async getQueueInfo(): Promise<Array<QueueInfo>>;
   abstract async getWorkerInfo(): Promise<Array<WorkerInfo>>;
@@ -90,8 +102,8 @@ export abstract class ClientRoot {
   abstract async getDatedMetrics(start: DateTime, end: DateTime): Promise<MetricDayRange>;
   abstract async getStorageMetrics(): Promise<StorageInfo>;
 
-  abstract async fetchJob(queues: Array<string>, timeout?: number): Promise<JobDescriptor | null>;
-  abstract async acknowledgeJob(JobDescriptor: JobDescriptor): Promise<void>;
+  abstract async fetchQueueJob(queues: Array<string>, timeout?: number): Promise<JobDescriptor | null>;
+  abstract async acknowledgeQueueJob(JobDescriptor: JobDescriptor): Promise<void>;
 }
 
 export abstract class ClientBase<TStorage> extends ClientRoot {
@@ -110,23 +122,15 @@ export abstract class ClientBase<TStorage> extends ClientRoot {
 
   async doPerformAsync(jobType: ConstructableJobBase, args: Array<any> = [], userOptions?: JobDescriptorOptions): Promise<string> {
     const descriptor = this.buildBaseDescriptor(jobType, args, userOptions);
-
-    return this.withQueue(descriptor.options.queue, async (queue) => {
-      await queue.enqueue(descriptor)
-
-      return descriptor.id;
-    });
+    return this.queue(descriptor.options.queue).enqueue(descriptor);
   }
 
   async doPerformAt(date: DateLike, jobType: ConstructableJobBase, args: Array<any> = [], userOptions?: JobDescriptorOptions): Promise<string> {
     const descriptor = this.buildBaseDescriptor(jobType, args, userOptions);
     descriptor.orchestration = { scheduledFor: date.valueOf() };
 
-    return this.withScheduledSet(async (scheduled) => {
-      await scheduled.add(descriptor);
-
-      return descriptor.id;
-    });
+    await this.scheduleSet.add(descriptor);
+    return descriptor.id;
   }
 
 

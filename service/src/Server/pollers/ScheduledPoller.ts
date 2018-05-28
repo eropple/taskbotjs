@@ -14,25 +14,21 @@ export class ScheduledPoller extends ServerPoller<ScheduleConfig> {
   async cleanup() {}
 
   async loopIter(taskbot: ClientRoot): Promise<void> {
-    await taskbot.withScheduledSet(async (scheduledSet) => {
-      const now = DateTime.utc().valueOf();
-      let shallBreak = false;
+    const scheduleSet = taskbot.scheduleSet;
+    const now = DateTime.utc().valueOf();
+    let shallBreak = false;
 
-      while (!shallBreak) {
-        await scheduledSet.fetchAndUse(0, now,
-          async (descriptor) => {
-            const logger = this.logger.child({ jobId: descriptor.id });
-            logger.info("Found scheduled job; queueing.");
-
-            taskbot.withQueue(descriptor.options.queue, async (queue) => {
-              await queue.enqueue(descriptor);
-            });
-          },
-          () => {
-            shallBreak = true;
-          }
-        );
-      }
-    });
+    while (!shallBreak) {
+      await scheduleSet.fetchAndUse(0, now,
+        async (descriptor) => {
+          const logger = this.logger.child({ jobId: descriptor.id });
+          logger.info("Found scheduled job; queueing.");
+          await taskbot.queue(descriptor.options.queue).enqueue(descriptor);
+        },
+        () => {
+          shallBreak = true;
+        }
+      );
+    }
   }
 }

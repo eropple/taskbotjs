@@ -6,7 +6,7 @@ import Sets from "./Sets";
 import Queues from "./Queues";
 import StorageMetrics from "./StorageMetrics";
 import AtAGlance from "./AtAGlance";
-import MetricChart from "./MetricChart";
+// import MetricChart from "./MetricChart";
 import Workers from "./Workers";
 import DevNote from "./DevNote";
 

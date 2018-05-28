@@ -16,6 +16,6 @@ export class PongJob extends Job<NoDeps> {
   async perform(): Promise<void> {
     const interval = Math.max(25, Math.round(chance.normal({mean: 300, dev: 250})));
     await sleepAsync(interval);
-    this.logger.info({ interval }, "Pong!");
+    this.logger.debug({ interval }, "Pong!");
   }
 }

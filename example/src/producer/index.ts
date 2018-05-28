@@ -56,12 +56,12 @@ const clientPool = Client.withRedisOptions(logger, { url: "redis://oss.dev.bot:6
       }
     }
 
-    if (chance.integer({ min: 0, max: 100 }) === 2) {
+    if (chance.integer({ min: 0, max: 100 }) < 5) {
       logger.info("Queueing fail job.");
       await clientPool.use(async (taskbot) => taskbot.performAsync(FailJob));
     }
 
-    if (chance.integer({ min: 0, max: 100 }) === 2) {
+    if (chance.integer({ min: 0, max: 100 }) < 5) {
       logger.info("Queueing long job.");
       await clientPool.use(async (taskbot) => taskbot.performAsync(LongJob));
     }

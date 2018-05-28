@@ -36,6 +36,8 @@ import { ServerPoller } from "../ServerPoller";
 import { Metrics } from "./Metrics";
 import { Heartbeat } from "./Heartbeat";
 import { VERSION, FLAVOR } from "..";
+import { worker } from "cluster";
+import { JanitorPoller } from "./pollers/JanitorPoller";
 
 const chance = new Chance();
 
@@ -68,6 +70,10 @@ export abstract class ServerBase extends EventEmitter {
    */
   readonly onJobLoopError = this.registerEvent<(err: Error) => void>();
 
+  /**
+   * Invoked when a job has started on a worker.
+   */
+  readonly onJobStarting = this.registerEvent<(job: JobDescriptor) => void>();
   /**
    * Invoked when a job has been completed.
    */
@@ -142,6 +148,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
   private readonly heartbeat: Heartbeat;
   private readonly retryPoller: RetryPoller;
   private readonly scheduledPoller: ScheduledPoller;
+  private readonly janitorPoller: JanitorPoller;
 
   private plugins: Array<ServerPluginBase> = [];
   private isShuttingDown: boolean = false;
@@ -167,6 +174,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     this.retryPoller = new RetryPoller(this.baseLogger, this);
     this.scheduledPoller = new ScheduledPoller(this.baseLogger, this);
+    this.janitorPoller = new JanitorPoller(this.baseLogger, this);
   }
 
   get activeWorkerCount() { return this.activeWorkers.length; }
@@ -181,7 +189,8 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       this.heartbeat,
 
       this.retryPoller,
-      this.scheduledPoller
+      this.scheduledPoller,
+      this.janitorPoller
     ], this.config.plugins.map((p) => new p(this.logger, this)));
 
     this.logger.info({ jobHandlerCount: Object.values(this.config.jobMap).length }, "Starting server.");
@@ -289,6 +298,9 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.intakeLoopTerminated = true;
   }
 
+  /**
+   * @private
+   */
   private async workerHandleLoop(): Promise<void> {
     const logger = this.logger.child({ loop: "worker" });
     logger.debug("Entering worker handle loop.");
@@ -313,6 +325,9 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.workerHandleLoopTerminated = true;
   }
 
+  /**
+   * @private
+   */
   private async intakeLoopIter(logger: Bunyan): Promise<void> {
     // We don't acquire the job lock here because `jobLoopIter` can
     // only increase this value (by finishing and removing jobs
@@ -347,12 +362,18 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     }
   }
 
+  /**
+   * @private
+   */
   private async workerHandleLoopIter(client: ClientRoot, logger: Bunyan): Promise<void> {
     await this.handleCompletedJobs(client, logger);
     // TODO: consider switching over to Bluebird promises to have a runaway-job cancellation phase?
     await this.startJobs(logger);
   }
 
+  /**
+   * @private
+   */
   private async handleCompletedJobs(client: ClientRoot, logger: Bunyan): Promise<void> {
     // TODO:  can we improve throughput here?
     //        I'm bothered a little by using a single-pass step to handle completed
@@ -368,6 +389,13 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     for (let worker of doneWorkers) {
       if (!worker.error) {
         this.emit(this.onJobComplete, worker.descriptor);
+
+        this.logger.debug({ jobId: worker.descriptor.id }, "Acking job and placing in done set.");
+
+        await Promise.all([
+          client.doneSet.add(worker.descriptor),
+          this.intake.acknowledge(worker.descriptor)
+        ]);
       } else {
         // Once we've got a failure, we need to:
         // - figure out if we need to retry the job
@@ -376,12 +404,12 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         this.handleErroredJob(worker, client, logger.child({ jobId: worker.descriptor.id }));
         this.emit(this.onJobError, worker.descriptor, worker.error);
       }
-
-      this.logger.debug({ jobId: worker.descriptor.id }, "Acking job.");
-      this.intake.acknowledge(worker.descriptor);
     }
   }
 
+  /**
+   * @private
+   */
   private async cleanupWorkersDuringShutdown(client: ClientRoot, logger: Bunyan): Promise<void> {
     // We've received a shutdown message, and so we need to cancel and
     // requeue any jobs currently occupying job slots that are not yet
@@ -390,13 +418,14 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     // guarantees _at least once_ execution.
 
     for (let worker of this.activeWorkers.filter((w) => !w.done)) {
-      await client.withQueue(worker.descriptor.options.queue, async (queue) => {
-        this.logger.info({ jobId: worker.descriptor.id }, "Requeuing due to worker shutdown.");
-        await queue.requeue(worker.descriptor)
-      });
+      this.logger.info({ jobId: worker.descriptor.id }, "Requeuing due to worker shutdown.");
+      await client.queue(worker.descriptor.options.queue).requeue(worker.descriptor);
     }
   }
 
+  /**
+   * @private
+   */
   private async startJobs(logger: Bunyan): Promise<void> {
     const newWorkers: Array<Worker<TDependencies>> = [];
 
@@ -420,11 +449,15 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       const taskbot = await this.clientPool.acquire();
       newWorker.start(
         this.config.dependencies(this.baseLogger, taskbot),
+        async (jd: JobDescriptor) => this.emit(this.onJobStarting, jd),
         async () => this.clientPool.release(taskbot)
       );
     }
   }
 
+  /**
+   * @private
+   */
   private async handleErroredJob(worker: Worker<TDependencies>, client: ClientRoot, logger: Bunyan) {
     const descriptor = worker.descriptor;
     const dead =
@@ -439,10 +472,14 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         logger.info("Job has no retries left; placing in the dead set.");
       }
 
-      descriptor.status.success = false;
-      delete descriptor.status.nextRetryAt;
-      client.withDeadSet(async (deadSet) => deadSet.add(descriptor));
-      this.emit(this.onJobDeath, descriptor);
+      if (descriptor.options.skipDeadJob) {
+        await client.unsafeDeleteJob(descriptor.id);
+      } else {
+        descriptor.status.success = false;
+        delete descriptor.status.nextRetryAt;
+        await client.deadSet.add(descriptor);
+        this.emit(this.onJobDeath, descriptor);
+      }
     } else {
       descriptor.status.retry = (descriptor.status.retry || 0) + 1;
       delete descriptor.status.nextRetryAt;
@@ -460,11 +497,14 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         },
         `Job has retries remaining; computing next retry and placing in retry set (${delta}s from now).`);
 
-      client.withRetrySet(async (retrySet) => retrySet.add(descriptor));
+      await client.retrySet.add(descriptor);
       this.emit(this.onJobRetryQueued, descriptor);
     }
   }
 
+  /**
+   * @private
+   */
   private async cleanup(): Promise<void> {
     this.logger.debug("Setting Redis pool to drain.");
     this.clientPool.drain();
@@ -472,16 +512,22 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.emit(this.onCleanup);
   }
 
+  /**
+   * @private
+   */
   private async acquireJobLock<T>(fn: () => T): Promise<T> {
     return this.jobLock.acquire("jobLock", fn);
   }
 
-  private currentWorkerStatus() {
+  /**
+   * Returns a snapshot of the current status of this server instance.
+   */
+  currentWorkerStatus() {
     return {
       concurrency: this.config.concurrency,
       activeJobCount: this.activeWorkers.length,
       waitingJobCount: this.jobsToStart.length,
-      availableSlots: this.config.concurrency - this.activeWorkers.length
+      availableSlots: this.config.concurrency - this.activeWorkers.length - this.jobsToStart.length
     };
   }
 }

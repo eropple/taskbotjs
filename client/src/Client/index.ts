@@ -22,19 +22,44 @@ import { optionsFor, generateJobId, Job } from "../Job";
 import { ClientBase, ClientPoolBase, buildClientPool, ClientPool, IRetries, IScheduled, IDead } from "../ClientBase";
 import { keyForQueue, Queue } from "./Queue";
 import { IQueue } from "../ClientBase/IQueue";
-import { RetrySortedSet, ScheduledSortedSet, DeadSortedSet } from "./Sets";
+import { RetrySortedSet, ScheduledSortedSet, DeadSortedSet, DoneSortedSet } from "./SortedSets";
 import { ICounter } from "../ClientBase/ICounter";
 import { Counter } from "./Counter";
 import { WorkerInfo, MetricDayRange, LUXON_YMD, QueueInfo, StorageInfo } from "..";
 import { BasicMetrics } from "../domain";
+import { Multi } from "redis";
+import { IDone } from "../ClientBase/ISortedSet";
 
 const CanonicalJSON = require("canonicaljson");
 
 export class Client extends ClientBase<AsyncRedis> {
   readonly requiresAcknowledge: boolean = false;
 
+  readonly retrySet: RetrySortedSet;
+  readonly scheduleSet: ScheduledSortedSet;
+  readonly deadSet: DeadSortedSet;
+  readonly doneSet: DoneSortedSet;
+
+  private readonly queues: { [queueName: string]: Queue } = {};
+
   constructor(logger: Bunyan, asyncRedis: AsyncRedis) {
     super(logger, asyncRedis);
+
+    this.retrySet = new RetrySortedSet(this.logger, this, this.asyncRedis);
+    this.scheduleSet = new ScheduledSortedSet(this.logger, this, this.asyncRedis);
+    this.deadSet = new DeadSortedSet(this.logger, this, this.asyncRedis);
+    this.doneSet = new DoneSortedSet(this.logger, this, this.asyncRedis);
+  }
+
+  queue(queueName: string): Queue {
+    let q = this.queues[queueName];
+
+    if (!q) {
+      q = new Queue(this, this.asyncRedis, this.logger, queueName);
+      this.queues[queueName] = q;
+    }
+
+    return q;
   }
 
   static withRedisPool(baseLogger: Bunyan, pool: RedisPool, poolOptions?: PoolOptions): ClientPool {
@@ -65,20 +90,86 @@ export class Client extends ClientBase<AsyncRedis> {
     return fn(new Counter(this.asyncRedis, counterName));
   }
 
+  async updateJob(descriptor: JobDescriptor): Promise<void> {
+    const key = `jobs/${descriptor.id}`;
+    this.logger.trace({ jobId: descriptor.id }, "Updating job.");
+
+    const json = CanonicalJSON.stringify(descriptor);
+    await this.asyncRedis.set(key, json);
+  }
+
+  _multiUpdateJob(multi: Multi, descriptor: JobDescriptor): Multi {
+    const key = `jobs/${descriptor.id}`;
+    this.logger.trace({ jobId: descriptor.id }, "Updating job in multi.");
+
+    const json = CanonicalJSON.stringify(descriptor);
+    return multi.set(key, json);
+  }
+
+  async readJob(id: string): Promise<JobDescriptor | null> {
+    const key = `jobs/${id}`;
+    this.logger.trace({ jobId: id }, "Fetching job.");
+
+    const json = await this.asyncRedis.get(key);
+    if (!json) {
+      this.logger.trace({ jobId: id }, `Job '${id}' not found in the store.`);
+      return null;
+    } else {
+      return CanonicalJSON.parse(json);
+    }
+  }
+
+  async readJobs(jobIds: Array<string>): Promise<Array<JobDescriptor | null>> {
+    const keys = jobIds.map((id) => `jobs/${id}`);
+
+    this.logger.trace({ jobIds }, "Fetching jobs.");
+
+    const jsons = await this.asyncRedis.mget(...keys);
+
+    return (jsons as string[]).map((json: string) => {
+      if (json) {
+        return CanonicalJSON.parse(json) as JobDescriptor;
+      } else {
+        return null;
+      }
+    });
+  }
+
+  async unsafeDeleteJob(jobOrJobId: string | JobDescriptor): Promise<void> {
+    let id;
+
+    if (typeof(jobOrJobId) === "string") {
+      id = jobOrJobId;
+    } else {
+      id = (jobOrJobId as JobDescriptor).id;
+    }
+
+    this.logger.trace({ jobId: id }, "Deleting job.");
+    const num = await this.asyncRedis.del(id);
+
+    if (num !== 1) {
+      this.logger.info({ jobId: id }, "DEL returned non-1 value; potential anomaly.");
+    }
+  }
+
   async withQueue<T>(queueName: string, fn: (queue: IQueue) => Promise<T>): Promise<T> {
-    return fn(new Queue(this, this.asyncRedis, queueName));
+    return fn(this.queue(queueName));
   }
 
   async withRetrySet<T>(fn: (retry: IRetries) => Promise<T>): Promise<T> {
-    return fn(new RetrySortedSet(this, this.asyncRedis));
+    return fn(this.retrySet);
   }
 
-  async withScheduledSet<T>(fn: (retry: IScheduled) => Promise<T>): Promise<T> {
-    return fn(new ScheduledSortedSet(this, this.asyncRedis));
+  async withScheduledSet<T>(fn: (scheduled: IScheduled) => Promise<T>): Promise<T> {
+    return fn(this.scheduleSet);
   }
 
-  async withDeadSet<T>(fn: (retry: IDead) => Promise<T>): Promise<T> {
-    return fn(new DeadSortedSet(this, this.asyncRedis));
+  async withDeadSet<T>(fn: (dead: IDead) => Promise<T>): Promise<T> {
+    return fn(this.deadSet);
+  }
+
+  async withDoneSet<T>(fn: (done: IDone) => Promise<T>): Promise<T> {
+    return fn(this.doneSet);
   }
 
   async getQueueInfo(): Promise<Array<QueueInfo>> {
@@ -116,7 +207,7 @@ export class Client extends ClientBase<AsyncRedis> {
 
     const promises =
       workers
-        .filter((w) => w.lastBeat > DateTime.utc().minus({ seconds: 15 }).valueOf())
+        .filter((w) => w.lastBeat < DateTime.utc().minus({ seconds: 15 }).valueOf())
         .map(async (w) => {
           try {
             await this.clearWorkerInfo(w.name)
@@ -141,18 +232,24 @@ export class Client extends ClientBase<AsyncRedis> {
   async getBasicMetrics(): Promise<BasicMetrics> {
     const tp = this.asyncRedis.get("metrics/processed");
     const te = this.asyncRedis.get("metrics/errored");
+    const tc = this.asyncRedis.get("metrics/completed");
+    const td = this.asyncRedis.get("metrics/died");
     const ss = this.asyncRedis.zcard("sorted/scheduled");
     const rs = this.asyncRedis.zcard("sorted/retry");
     const ds = this.asyncRedis.zcard("sorted/dead");
+    const dns = this.asyncRedis.zcard("sorted/done");
 
     const enqueued = (await this.getQueueInfo()).map((q) => q.size).reduce((a, v) => a + v, 0);
 
     const ret: BasicMetrics = {
-      totalProcessed: parseInt(await tp || "0", 10),
-      totalErrored: parseInt(await te || "0", 10),
+      processed: parseInt(await tp || "0", 10),
+      errored: parseInt(await te || "0", 10),
+      completed: parseInt(await tc || "0", 10),
+      died: parseInt(await td || "0", 10),
       enqueued,
       scheduledSetSize: await ss || 0,
       retrySetSize: await rs || 0,
+      doneSetSize: await dns || 0,
       deadSetSize: await ds || 0
     };
 
@@ -179,13 +276,15 @@ export class Client extends ClientBase<AsyncRedis> {
       const keys = [
         `metrics/processed/${ymd}`,
         `metrics/errored/${ymd}`,
+        `metrics/completed/${ymd}`,
         `metrics/died/${ymd}`
       ];
       const resp = await this.asyncRedis.mget(...keys);
       ret[ymd] = {
         processed: parseInt(resp[0] || "0", 10),
         errored: parseInt(resp[1] || "0", 10),
-        died: parseInt(resp[2] || "0", 10)
+        completed: parseInt(resp[2] || "0", 10),
+        died: parseInt(resp[3] || "0", 10)
       };
     }
 
@@ -206,7 +305,7 @@ export class Client extends ClientBase<AsyncRedis> {
     };
   }
 
-  fetchJob(queues: ReadonlyArray<string>, timeout?: number): Promise<JobDescriptor | null> {
+  fetchQueueJob(queues: ReadonlyArray<string>, timeout?: number): Promise<JobDescriptor | null> {
     // An early version of TaskBotJS suffered from queue starvation because
     // the queues at the top of the *weighted* list always were pulled from
     // first. `this.queueWeights` exists to solve that. We shuffle them so
@@ -230,7 +329,7 @@ export class Client extends ClientBase<AsyncRedis> {
           if (ret) {
             const queueName = ret[0];
             const queueValue = ret[1];
-            resolve(CanonicalJSON.parse(queueValue) as JobDescriptor);
+            resolve(this.readJob(queueValue));
           } else {
             resolve(null);
           }
@@ -239,7 +338,7 @@ export class Client extends ClientBase<AsyncRedis> {
     });
   }
 
-  async acknowledgeJob(JobDescriptor: JobDescriptor): Promise<void> {}
+  async acknowledgeQueueJob(JobDescriptor: JobDescriptor): Promise<void> {}
 
   private async scanAll<T>(pattern: string, count: number = 10): Promise<Array<string>> {
     const data: Array<Array<string>> = [];

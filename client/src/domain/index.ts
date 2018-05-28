@@ -10,26 +10,32 @@ export interface WorkerInfo {
 export interface WorkMetric {
   readonly processed: number;
   readonly errored: number;
+  readonly completed: number;
   readonly died: number;
 }
 
-// TODO: unify this and WorkMetric; is "total" really necessary?
-export interface BasicMetrics {
-  readonly totalProcessed: number;
-  readonly totalErrored: number;
+export interface BasicMetrics extends WorkMetric {
   readonly enqueued: number;
   readonly scheduledSetSize: number;
   readonly retrySetSize: number;
   readonly deadSetSize: number;
+  readonly doneSetSize: number;
 }
 
 export type MetricDayRange = { [date: string]: WorkMetric };
 
+/**
+ * Details about a single job queue in TaskBotJS.
+ */
 export interface QueueInfo {
   readonly name: string;
   readonly size: number;
 }
 
+/**
+ * Catch-all data representation for the underlying health of the TaskBotJS
+ * storage system (i.e., Redis metrics).
+ */
 export interface StorageInfo {
   readonly type: string;
   readonly data: object;

@@ -8,10 +8,11 @@ import { TimeInterval } from "../Config";
 import { ServerPlugin } from "../ServerPlugin";
 import { sleepFor } from "../util";
 import { PollerConfig } from "../Config/Config";
+import { intervalSplayMilliseconds } from "../util/random";
 
 export abstract class ServerPoller<TConfig extends PollerConfig> extends ServerPlugin<TConfig> {
-  private running: boolean = false;
-  private hasShutDown: boolean = false;
+  private timeout: NodeJS.Timer = null;
+  private executing: boolean = false;
 
   async doStart(): Promise<void> {
     if (!this.config.enabled) {
@@ -19,30 +20,43 @@ export abstract class ServerPoller<TConfig extends PollerConfig> extends ServerP
     } else {
       this.logger.info("Starting poller.");
 
-      this.running = true;
-      while (this.running) {
-        try {
-          await this.withClient(async (taskbot) => this.loopIter(taskbot));
-        } catch (err) {
-          this.logger.error({ err }, "Error when polling.");
-        }
-
-        await sleepFor(this.config.polling);
-      }
-
-      this.hasShutDown = true;
-      this.logger.info("Poll loop has exited.");
+      await this.loop();
+      this.setLoopOnTimeout();
     }
+  }
+
+  private async loop(): Promise<void> {
+    this.executing = true;
+
+    try {
+      this.logger.debug("Entering poll iteration.");
+      await this.withClient(async (taskbot) => this.loopIter(taskbot));
+    } catch (err) {
+      this.logger.error(err);
+    }
+
+    this.executing = false;
+
+    this.setLoopOnTimeout();
+  }
+
+  private setLoopOnTimeout(): void {
+    const next = intervalSplayMilliseconds(this.config.polling.interval, this.config.polling.splay);
+    this.timeout = setTimeout(() => this.loop(), next);
   }
 
   async doStop(): Promise<void> {
     if (this.config.enabled) {
       this.logger.info("Stopping poller.");
-      this.running = false;
 
-      while (!this.hasShutDown) {
-        this.logger.trace("Waiting for shutdown.");
+      if (this.executing) {
+        this.logger.trace("Waiting for poller to finish.");
         await sleepAsync(100);
+      }
+
+      if (this.timeout) {
+        clearTimeout(this.timeout);
+        this.timeout = null;
       }
 
       this.logger.info("Poller stopped.");

@@ -1,6 +1,5 @@
 import * as React from "react";
 import {
-  Link
 } from "react-router-dom";
 
 import Paper from "@material-ui/core/Paper";
@@ -76,48 +75,30 @@ export class AtAGlance extends React.Component {
               <Typography variant="body2">Errored</Typography>
             </TableCell>
             <TableCell>
+              <Typography variant="body2">Completed</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="body2">Died</Typography>
+            </TableCell>
+            <TableCell>
               <Typography variant="body2">Enqueued</Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body2" component={Link} to="/scheduled">
-                Scheduled
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body2" component={Link} to="/retry">
-                Retries
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body2" component={Link} to="/dead">
-                Dead
-              </Typography>
             </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>
-              <Typography variant="body1">{data.totalProcessed}</Typography>
+              <Typography variant="body1">{data.processed}</Typography>
             </TableCell>
             <TableCell>
-              <Typography variant="body1">{data.totalErrored}</Typography>
+              <Typography variant="body1">{data.errored}</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="body1">{data.completed}</Typography>
+            </TableCell>
+            <TableCell>
+              <Typography variant="body1">{data.died}</Typography>
             </TableCell>
             <TableCell>
               <Typography variant="body1">{data.enqueued}</Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body1" component={Link} to="/scheduled">
-                {data.scheduledSetSize}
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body1"  component={Link} to="/retry">
-                {data.retrySetSize}
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body1"  component={Link} to="/dead">
-                {data.deadSetSize}
-              </Typography>
             </TableCell>
           </TableRow>
         </TableBody>

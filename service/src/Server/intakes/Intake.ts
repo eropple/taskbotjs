@@ -56,7 +56,7 @@ export abstract class Intake<TIntakeConfig extends IntakeConfig> {
           throw new Error("Client not connected during acknowledge; a job may have been orphaned.");
         }
 
-        return taskbot.acknowledgeJob(job);
+        return taskbot.acknowledgeQueueJob(job);
       }
     });
   }

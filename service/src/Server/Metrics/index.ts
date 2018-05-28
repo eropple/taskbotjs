@@ -10,6 +10,11 @@ import {
 import { ServerPlugin } from "../../ServerPlugin";
 import { PluginConfig } from "../../Config/Config";
 
+/**
+ * Attaches to server lifecycle events to publish metrics to the datastore.
+ *
+ * @private
+ */
 export class Metrics extends ServerPlugin<PluginConfig> {
   private static readonly CONFIG: PluginConfig = { enabled: true };
 
@@ -19,10 +24,20 @@ export class Metrics extends ServerPlugin<PluginConfig> {
   async initialize(): Promise<void> {
     this.logger.info("Attaching metrics listeners.");
 
-    this.server.onJobComplete(async (jd: JobDescriptor) => {
-      const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
+    this.server.onJobStarting(async (jd: JobDescriptor) => {
+      const date = DateTime.fromMillis(jd.status.startedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/processed";
       const dateKey = "metrics/processed/" + date;
+      await this.withClient(async (taskbot) => {
+        await taskbot.incrementCounter(allKey);
+        await taskbot.incrementCounter(dateKey);
+      });
+    });
+
+    this.server.onJobComplete(async (jd: JobDescriptor) => {
+      const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
+      const allKey = "metrics/completed";
+      const dateKey = "metrics/completed/" + date;
       await this.withClient(async (taskbot) => {
         await taskbot.incrementCounter(allKey);
         await taskbot.incrementCounter(dateKey);

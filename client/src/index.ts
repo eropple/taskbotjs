@@ -32,7 +32,8 @@ export {
 } from "./Job";
 
 export {
-  JobDescriptor
+  JobDescriptor,
+  JobDescriptorOrId
 } from "./JobMetadata"
 
 export {

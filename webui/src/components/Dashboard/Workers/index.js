@@ -103,7 +103,7 @@ export class Workers extends React.Component {
         <TableBody>
           {
             workers.map((w) =>
-              <TableRow>
+              <TableRow key={w.name}>
                 <TableCell><Typography variant="body1">{w.name}</Typography></TableCell>
                 <TableCell><Typography variant="body1">{this._timeFormat(w.lastBeat)}</Typography></TableCell>
                 <TableCell><Typography variant="body1">{w.active}</Typography></TableCell>

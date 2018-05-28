@@ -15,8 +15,8 @@ export class LongJob extends Job<NoDeps> {
 
   async perform(): Promise<void> {
     const interval = Math.max(10000, Math.round(chance.normal({mean: 30000, dev: 10000})));
-    this.logger.info({ interval }, "Starting a long job.");
+    this.logger.debug({ interval }, "Starting a long job.");
     await sleepAsync(interval);
-    this.logger.info({ interval }, "Long job done!");
+    this.logger.debug({ interval }, "Long job done!");
   }
 }

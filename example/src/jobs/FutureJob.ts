@@ -16,6 +16,6 @@ export class FutureJob extends Job<NoDeps> {
   async perform(): Promise<void> {
     const interval = Math.max(25, Math.round(chance.normal({mean: 300, dev: 250})));
     await sleepAsync(interval);
-    this.logger.info({ interval }, "I'm a job sent into the future!");
+    this.logger.debug({ interval }, "I'm a job sent into the future!");
   }
 }

@@ -11,6 +11,11 @@ import { ServerPlugin } from "../../ServerPlugin";
 import { VERSION, FLAVOR } from "../..";
 import { PluginConfig } from "../../Config/Config";
 
+/**
+ * Handles worker heartbeat updates through the poller mechanism.
+ *
+ * @private
+ */
 export class Heartbeat extends ServerPlugin<PluginConfig> {
   private static readonly CONFIG: PluginConfig = { enabled: true };
 

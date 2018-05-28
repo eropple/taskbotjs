@@ -118,6 +118,15 @@ export interface ScheduleConfig extends PollerConfig {
 }
 
 /**
+ * Configuration for the janitor poller, which checks the done and dead sets
+ * for jobs older than a given value, evicting anything sufficiently old.
+ */
+export interface JanitorConfig extends PollerConfig {
+  doneAge: DurationFields | Duration,
+  deadAge: DurationFields | Duration
+}
+
+/**
  * Configuration details for the Redis connector.
  */
 export interface RedisOptions {
@@ -190,6 +199,19 @@ export class ConfigBase {
       interval: Duration.fromObject({ seconds: 1 }),
       splay: Duration.fromObject({ milliseconds: 100 })
     }
+  };
+
+  /**
+   * Configuration for the janitor poller.
+   */
+  janitor: JanitorConfig = {
+    enabled: true,
+    polling: {
+      interval: Duration.fromObject({ hours: 6 }),
+      splay: Duration.fromObject({ minutes: 15 })
+    },
+    doneAge: { days: 1 },
+    deadAge: { weeks: 4 }
   };
 
   /**

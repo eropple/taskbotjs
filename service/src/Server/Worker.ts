@@ -8,6 +8,12 @@ import {
 } from "@taskbotjs/client";
 import { JobMapping } from "../Config";
 
+/**
+ * Job runner; accepts a descriptor and handles the runtime lifecycle
+ * of the job.
+ *
+ * @private
+ */
 export class Worker<TDependencies extends IDependencies> {
   readonly descriptor: JobDescriptor;
 
@@ -29,7 +35,7 @@ export class Worker<TDependencies extends IDependencies> {
     this.logger = baseLogger.child({ component: "Worker", jobId: descriptor.id });
   }
 
-  async start(deps: TDependencies, onComplete: () => Promise<void>): Promise<void> {
+  async start(deps: TDependencies, onStarting: (jd: JobDescriptor) => any, onComplete: () => Promise<void>): Promise<void> {
     const logger = this.logger;
     const descriptor = this.descriptor;
 
@@ -43,6 +49,8 @@ export class Worker<TDependencies extends IDependencies> {
       if (!this._jobCtor) {
         throw new Error(`No job handler found for '${descriptor.name}'.`);
       }
+
+      onStarting(descriptor);
 
       const job = new this._jobCtor(deps, descriptor);
       await job.perform.apply(job, this.descriptor.args);

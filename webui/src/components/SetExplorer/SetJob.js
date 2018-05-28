@@ -20,6 +20,7 @@ export class SetJob extends React.Component {
     setName: PropTypes.string.isRequired,
     jobId: PropTypes.string.isRequired,
     client: PropTypes.any.isRequired,
+    canLaunch: PropTypes.bool.isRequired,
     history: PropTypes.any.isRequired,
     pageHint: PropTypes.number
   };
@@ -30,7 +31,6 @@ export class SetJob extends React.Component {
 
   constructor(props) {
     super(props);
-    console.log(props)
 
     this.state = SetJob.DEFAULT_STATE;
   }
@@ -72,7 +72,7 @@ export class SetJob extends React.Component {
   }
 
   render() {
-    const { setName } = this.props;
+    const { setName, canLaunch } = this.props;
     const { job } = this.state;
 
     if (!job) {
@@ -85,14 +85,16 @@ export class SetJob extends React.Component {
               <Typography variant="headline"><em>{setName}</em> job <em>{job.id}</em> from <em>{job.options.queue}</em></Typography>
             </Grid>
             <Grid item xs={2}>
-              <Button
-                  size="small"
-                  variant="raised"
-                  color="primary"
-                  style={{ marginLeft: "1rem" }}
-                  onClick={() => this._launch()}>
-                Launch
-              </Button>
+              { canLaunch
+                ? <Button
+                      size="small"
+                      variant="raised"
+                      color="primary"
+                      style={{ marginLeft: "1rem" }}
+                      onClick={() => this._launch()}>
+                    Launch
+                  </Button>
+                : null }
               <Button
                   size="small"
                   color="default"

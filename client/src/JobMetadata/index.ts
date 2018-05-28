@@ -20,12 +20,8 @@ export type JobDescriptorStatus = {
   error?: JobDescriptorErrorDetail;
 }
 
-export type JobDescriptorOrchestrationScheduling = {}
-export type JobDescriptorOrchestrationRecurring = {}
-
 export type JobDescriptorOrchestration = {
   scheduledFor?: number;
-  recurring?: JobDescriptorOrchestrationRecurring;
 }
 
 export type JobDescriptor = {
@@ -39,3 +35,5 @@ export type JobDescriptor = {
   orchestration?: JobDescriptorOrchestration;
   x: object;
 }
+
+export type JobDescriptorOrId = JobDescriptor | string;

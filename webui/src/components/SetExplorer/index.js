@@ -28,6 +28,7 @@ export class SetExplorer extends React.Component {
     tick: PropTypes.number.isRequired,
     client: PropTypes.any.isRequired,
     setName: PropTypes.string.isRequired,
+    canLaunch: PropTypes.bool.isRequired,
     pageNumber: PropTypes.number.isRequired
   };
 
@@ -63,7 +64,7 @@ export class SetExplorer extends React.Component {
   }
 
   render() {
-    const { setName, pageNumber } = this.props;
+    const { setName, pageNumber, canLaunch } = this.props;
     const { size, jobs } = this.state;
 
     const prevPage = pageNumber - 1;
@@ -176,14 +177,16 @@ export class SetExplorer extends React.Component {
                         <Typography variant="body1" noWrap style={{ fontFamily: "monospace" }}>{JSON.stringify(job.args)}</Typography>
                       </TableCell>
                       <TableCell>
-                        <Button
-                            size="small"
-                            variant="raised"
-                            color="primary"
-                            style={{ marginLeft: "1rem" }}
-                            onClick={() => this._launch(job)}>
-                          Launch
-                        </Button>
+                        { canLaunch
+                          ? <Button
+                              size="small"
+                              variant="raised"
+                              color="primary"
+                              style={{ marginLeft: "1rem" }}
+                              onClick={() => this._launch(job)}>
+                            Launch
+                          </Button>
+                          : null }
                         <Button
                             size="small"
                             color="default"

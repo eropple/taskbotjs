@@ -16,6 +16,6 @@ export class PingJob extends Job<NoDeps> {
   async perform(): Promise<void> {
     const interval = Math.max(25, Math.round(chance.normal({mean: 300, dev: 250})));
     await sleepAsync(interval);
-    this.logger.info({ interval }, "Ping!");
+    this.logger.debug({ interval }, "Ping!");
   }
 }

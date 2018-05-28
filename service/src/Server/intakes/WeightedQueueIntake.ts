@@ -55,7 +55,7 @@ export class WeightedJobIntake extends Intake<WeightedQueueIntakeConfig> {
   }
 
   async fetch(client: ClientRoot): Promise<JobDescriptor | null> {
-    const job = await client.fetchJob(_.uniq(_.shuffle(this.queueWeights)), this.timeoutSeconds);
+    const job = await client.fetchQueueJob(_.uniq(_.shuffle(this.queueWeights)), this.timeoutSeconds);
 
     if (job) {
       this.logger.debug({ jobId: job.id }, "Job fetched.");

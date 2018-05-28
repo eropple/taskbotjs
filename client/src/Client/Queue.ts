@@ -1,7 +1,10 @@
+import Bunyan from "bunyan";
+
 import { AsyncRedis } from "../redis";
-import { JobDescriptor } from "../JobMetadata";
+import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
 import { IQueue } from "../ClientBase/IQueue";
 import { Client } from ".";
+import { Multi } from "redis";
 
 const CanonicalJSON = require("canonicaljson");
 
@@ -12,17 +15,17 @@ export function keyForQueue(name: string): string {
 export class Queue implements IQueue {
   readonly key: string;
 
-  constructor(client: Client, private readonly asyncRedis: AsyncRedis, readonly name: string) {
+  private readonly logger: Bunyan
+
+  constructor(private readonly client: Client, private readonly asyncRedis: AsyncRedis, baseLogger: Bunyan, readonly name: string) {
     this.key = keyForQueue(name);
     this.asyncRedis = asyncRedis;
+
+    this.logger = baseLogger.child({ queueName: name });
   }
 
   async size(): Promise<number> {
     return this.asyncRedis.llen(this.key);
-  }
-
-  async clear(): Promise<void> {
-    await this.asyncRedis.del(this.key);
   }
 
   async peek(limit: number, offset: number): Promise<Array<JobDescriptor>> {
@@ -30,8 +33,13 @@ export class Queue implements IQueue {
     const pageEnd = pageStart - limit + 1; // because we're in negative-land
     const a = Math.min(pageStart, pageEnd);
     const b = Math.max(pageStart, pageEnd);
-    const resp = await this.asyncRedis.lrange(this.key, a, b);
-    return resp.map((item) => CanonicalJSON.parse(item) as JobDescriptor).reverse();
+    const jobKeys: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
+
+    if (jobKeys.length === 0) {
+      return [];
+    }
+
+    return (await this.client.readJobs(jobKeys)).filter((jd) => jd);
   }
 
   async map<T>(fn: (data: JobDescriptor) => T | Promise<T>): Promise<Array<T>> {
@@ -43,19 +51,20 @@ export class Queue implements IQueue {
       const end = -((x + 1) * pageSize)
       const a = Math.min(start, end);
       const b = Math.max(start, end);
-      const items: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
+      const jobKeys: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
 
-      if (items.length === 0) {
+      if (jobKeys.length === 0) {
         return ret;
       }
+
+      const items = await this.client.readJobs(jobKeys);
 
       for (let item of items) {
         if (!item) {
           return ret;
         }
 
-        const jd = CanonicalJSON.parse(item);
-        ret.push(await fn(jd));
+        ret.push(await fn(item));
       }
     }
 
@@ -70,19 +79,20 @@ export class Queue implements IQueue {
       const end = -((x + 1) * pageSize)
       const a = Math.min(start, end);
       const b = Math.max(start, end);
-      const items: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
+      const jobKeys: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
 
-      if (items.length === 0) {
+      if (jobKeys.length === 0) {
         return;
       }
+
+      const items = await this.client.readJobs(jobKeys);
 
       for (let item of items) {
         if (!item) {
           return;
         }
 
-        const jd = CanonicalJSON.parse(item);
-        await fn(jd);
+        await fn(item);
       }
     }
 
@@ -96,20 +106,21 @@ export class Queue implements IQueue {
       const end = -((x + 1) * pageSize)
       const a = Math.min(start, end);
       const b = Math.max(start, end);
-      const items: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
+      const jobKeys: string[] = (await this.asyncRedis.lrange(this.key, a, b)).reverse();
 
-      if (items.length === 0) {
+      if (jobKeys.length === 0) {
         return null;
       }
+
+      const items = await this.client.readJobs(jobKeys);
 
       for (let item of items) {
         if (!item) {
           return null;
         }
 
-        const jd = CanonicalJSON.parse(item);
-        if (await fn(jd)) {
-          return jd;
+        if (await fn(item)) {
+          return item;
         }
       }
     }
@@ -117,44 +128,45 @@ export class Queue implements IQueue {
     // never falls through
   }
 
-  async byId(id: string): Promise<JobDescriptor | null> {
-    return this.find((jd) => jd.id === id);
+  async remove(jobOrId: JobDescriptorOrId): Promise<boolean> {
+    const jobId = (typeof jobOrId === "string") ? jobOrId : jobOrId.id;
+
+    return (await this.asyncRedis.lrem(this.key, 1, jobId)) === 1;
   }
 
-  async remove(jd: JobDescriptor): Promise<boolean> {
-    return (await this.asyncRedis.lrem(this.key, 1, CanonicalJSON.stringify(jd))) === 1;
-  }
-
-  async removeById(id: string): Promise<boolean> {
-    const jd = await this.byId(id);
+  async launch(jobOrId: JobDescriptorOrId): Promise<string | null> {
+    const jobId = (typeof jobOrId === "string") ? jobOrId : jobOrId.id;
+    const jd = await this.client.readJob(jobId);
 
     if (!jd) {
-      return false;
-    }
-
-    return this.remove(jd);
-  }
-
-  async launchById(id: string): Promise<string | null> {
-    const jd = await this.byId(id);
-
-    if (!jd) {
+      this.logger.warn({ jobId }, "launch: Job not in queue.")
       return null;
     }
 
-    if (await this.remove(jd)) {
+    if (!await this.remove(jobId)) {
+      this.logger.warn({ jobId }, "Job not already in queue. To put a new job at the head of the queue, use the requeue method.");
+      return null;
+    } else {
       await this.requeue(jd);
     }
 
-    return jd.id;
+    return jobId;
   }
 
-  async enqueue(job: JobDescriptor): Promise<void> {
+  async enqueue(job: JobDescriptor): Promise<string> {
     if (job.options.queue !== this.name) {
       throw new Error(`Misqueued job: queue '${this.name}', job '${job.options.queue}'.`);
     }
 
-    await this.asyncRedis.lpush(this.key, CanonicalJSON.stringify(job));
+    const multi = this.asyncRedis.multi();
+    this.multiEnqueue(multi, job);
+
+    await this.asyncRedis.execMulti(multi);
+    return job.id;
+  }
+
+  multiEnqueue(multi: Multi, job: JobDescriptor): Multi {
+    return multi.set(`jobs/${job.id}`, CanonicalJSON.stringify(job)).lpush(this.key, job.id);
   }
 
   async requeue(job: JobDescriptor): Promise<void> {
@@ -162,7 +174,14 @@ export class Queue implements IQueue {
       throw new Error(`Misqueued job: queue '${this.name}', job '${job.options.queue}'.`);
     }
 
-    await this.asyncRedis.rpush(this.key, CanonicalJSON.stringify(job));
+    const multi = this.asyncRedis.multi();
+    this.multiRequeue(multi, job);
+
+    await this.asyncRedis.execMulti(multi);
+  }
+
+  multiRequeue(multi: Multi, job: JobDescriptor): Multi {
+    return multi.set(`jobs/${job.id}`, CanonicalJSON.stringify(job)).rpush(this.key, job.id);
   }
 
   async acknowledge(job: JobDescriptor): Promise<void> { /* nothing needed for standard Redis */ }
