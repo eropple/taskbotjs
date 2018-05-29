@@ -419,7 +419,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     for (let worker of this.activeWorkers.filter((w) => !w.done)) {
       this.logger.info({ jobId: worker.descriptor.id }, "Requeuing due to worker shutdown.");
-      await client.queue(worker.descriptor.options.queue).requeue(worker.descriptor);
+      await Promise.all([
+        client.queue(worker.descriptor.options.queue).requeue(worker.descriptor),
+        this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(worker.descriptor, this.name) : null
+      ]);
     }
   }
 
