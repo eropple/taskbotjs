@@ -53,7 +53,7 @@ export abstract class ServerBase extends EventEmitter {
   /**
    * The configuration for this server.
    */
-  readonly config: ConfigBase;
+  abstract get config(): ConfigBase;
 
   /**
    * The server's client pool. Exposed to allow external libraries (particularly
@@ -123,6 +123,7 @@ export abstract class ServerBase extends EventEmitter {
   constructor(cp: ClientPool) {
     super();
 
+    // this should be overwritten, and is by `Server`.
     this.clientPool = cp;
 
     this.name = [
@@ -341,7 +342,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
       while (fetched < availableSlots) {
         logger.trace({ fetched, availableSlots}, "Fetching.");
-        let job: JobDescriptor | null = await this.intake.doFetch();
+        const job: JobDescriptor | null = await this.intake.doFetch();
 
         if (!job) {
           logger.trace("No job fetched; breaking from iter to restart intake loop.");
@@ -392,7 +393,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
         this.logger.debug({ jobId: worker.descriptor.id }, "Acking job and placing in done set.");
 
-        await Promise.all([
+        await Promise.all<any>([
           client.doneSet.add(worker.descriptor),
           this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(worker.descriptor, this.name) : null
         ]);
@@ -419,7 +420,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     for (let worker of this.activeWorkers.filter((w) => !w.done)) {
       this.logger.info({ jobId: worker.descriptor.id }, "Requeuing due to worker shutdown.");
-      await Promise.all([
+      await Promise.all<any>([
         client.queue(worker.descriptor.options.queue).requeue(worker.descriptor),
         this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(worker.descriptor, this.name) : null
       ]);
@@ -439,7 +440,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       const { activeJobCount, waitingJobCount, availableSlots } = this.currentWorkerStatus();
 
       while (jobsToStart.length > 0) {
-        const descriptor = jobsToStart.shift();
+        const descriptor = jobsToStart.shift()!; // ! = length is guaranteed to be greater than zero
         const jobName = descriptor.name;
 
         const worker = new Worker<TDependencies>(this.baseLogger, descriptor, this.config.jobMap);
@@ -463,10 +464,19 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
    */
   private async handleErroredJob(worker: Worker<TDependencies>, client: ClientRoot, logger: Bunyan) {
     const descriptor = worker.descriptor;
+    if (!descriptor.status) {
+      throw new Error("Invariant: by the time we get here, descriptors should have a status object.");
+    }
+
+    if (!descriptor.status.endedAt) {
+      throw new Error("Invariant: endedAt should already be set.");
+    }
+
+    const retryCount: number = _.get(descriptor, ["status", "retry"], 0);
     const dead =
       !worker.jobCtor ||
       descriptor.options.maxRetries === false ||
-      descriptor.options.maxRetries === descriptor.status.retry;
+      descriptor.options.maxRetries === retryCount; // ! = we know these have been created
 
     if (dead) {
       if (!worker.jobCtor) {
@@ -480,7 +490,8 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       } else {
         descriptor.status.success = false;
         delete descriptor.status.nextRetryAt;
-        await Promise.all([
+
+        await Promise.all<any>([
           client.deadSet.add(descriptor),
           this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(descriptor, this.name) : null
         ]);
@@ -503,7 +514,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         },
         `Job has retries remaining; computing next retry and placing in retry set (${delta}s from now).`);
 
-        await Promise.all([
+        await Promise.all<any>([
           client.retrySet.add(descriptor),
           this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(descriptor, this.name) : null
         ]);

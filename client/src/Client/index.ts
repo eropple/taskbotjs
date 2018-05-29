@@ -126,7 +126,7 @@ export class Client extends ClientBase<AsyncRedis> {
 
     const jsons = await this.asyncRedis.mget(...keys);
 
-    return (jsons as string[]).map((json: string) => {
+    return (jsons as (string | null)[]).map((json: string | null) => {
       if (json) {
         return CanonicalJSON.parse(json) as JobDescriptor;
       } else {
@@ -218,7 +218,7 @@ export class Client extends ClientBase<AsyncRedis> {
           }
         });
 
-    return (await Promise.all(promises)).reduce((a, v) => a + v, 0);
+    return (await Promise.all(promises)).reduce((a: number, v: number) => a + v, 0);
   }
 
   async updateWorkerInfo(info: WorkerInfo): Promise<void> {
@@ -318,7 +318,9 @@ export class Client extends ClientBase<AsyncRedis> {
 
     // We could fight TypeScript to make this strings-or-numbers...but that's
     // annoying and Redis takes string args anyway, so.
-    redisArgs.push(timeout.toString());
+    if (timeout) {
+      redisArgs.push(timeout.toString());
+    }
 
     return new Promise((resolve, reject) => {
       this.logger.trace({ redisArgs }, "BRPOPping.");

@@ -1,3 +1,4 @@
+import * as _ from "lodash";
 import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
@@ -7,10 +8,10 @@ import { IRetries, IScheduled, IDead, IDone } from "../ClientBase/ISortedSet";
 import { ScoreSortedSet, CleanableScoreSortedSet } from "./ScoreSortedSet";
 import { Client } from ".";
 
-const retryScorer = (jd: JobDescriptor) => jd.status.nextRetryAt;
-const scheduledScorer = (jd: JobDescriptor) => jd.orchestration.scheduledFor;
-const deadScorer = (jd: JobDescriptor) => jd.status.endedAt;
-const doneScorer = (jd: JobDescriptor) => jd.status.endedAt;
+const retryScorer = (jd: JobDescriptor) => _.get(jd, ["status", "nextRetryAt"], Infinity);
+const scheduledScorer = (jd: JobDescriptor) => _.get(jd, ["orchestration", "scheduledFor"], Infinity);
+const deadScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
+const doneScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 
 export class RetrySortedSet extends ScoreSortedSet implements IRetries {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
@@ -21,11 +22,15 @@ export class RetrySortedSet extends ScoreSortedSet implements IRetries {
     const jobId = (typeof jobOrId === "string") ? jobOrId : jobOrId.id;
 
     if (!await this.contains(jobOrId)) {
-      this.logger.warn("Attempted to launch a job not in set.");
+      this.logger.warn({ jobId }, "Attempted to launch a job not in set.");
       return null;
     }
 
     const jd = await this.client.readJob(jobId);
+    if (!jd) {
+      this.logger.warn({ jobId }, "Job not found in store. Deletion anomaly?");
+      return null;
+    }
 
     const queue = this.client.queue(jd.options.queue);
     const multi = this.asyncRedis.multi();
@@ -52,6 +57,10 @@ export class ScheduledSortedSet extends ScoreSortedSet implements IScheduled {
     }
 
     const jd = await this.client.readJob(jobId);
+    if (!jd) {
+      this.logger.warn({ jobId }, "Job not found in store. Deletion anomaly?");
+      return null;
+    }
 
     const queue = this.client.queue(jd.options.queue);
     const multi = this.asyncRedis.multi();
@@ -78,6 +87,10 @@ export class DeadSortedSet extends CleanableScoreSortedSet implements IDead {
     }
 
     const jd = await this.client.readJob(jobId);
+    if (!jd) {
+      this.logger.warn({ jobId }, "Job not found in store. Deletion anomaly?");
+      return null;
+    }
 
     const queue = this.client.queue(jd.options.queue);
     const multi = this.asyncRedis.multi();

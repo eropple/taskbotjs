@@ -11,7 +11,7 @@ import { PollerConfig } from "../Config/Config";
 import { intervalSplayMilliseconds } from "../util/random";
 
 export abstract class ServerPoller<TConfig extends PollerConfig> extends ServerPlugin<TConfig> {
-  private timeout: NodeJS.Timer = null;
+  private timeout: NodeJS.Timer | null = null;
   private executing: boolean = false;
 
   async doStart(): Promise<void> {

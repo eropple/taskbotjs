@@ -20,7 +20,7 @@ export class Worker<TDependencies extends IDependencies> {
   private readonly jobMapping: JobMapping<TDependencies>;
   private readonly logger: Bunyan;
 
-  private _jobCtor: ConstructableJob<TDependencies>;
+  private _jobCtor: ConstructableJob<TDependencies> | null = null;
   get jobCtor(): ConstructableJob<TDependencies> | null { return this._jobCtor; }
 
   private _done: boolean = false;
@@ -37,14 +37,14 @@ export class Worker<TDependencies extends IDependencies> {
 
   async start(deps: TDependencies, onStarting: (jd: JobDescriptor) => any, onComplete: () => Promise<void>): Promise<void> {
     const logger = this.logger;
+
+    logger.debug("Starting job.");
+    const startedAt = DateTime.utc().valueOf();
     const descriptor = this.descriptor;
+    descriptor.status = descriptor.status || { startedAt, retry: 0 };
+    descriptor.status.startedAt = startedAt;
 
     try {
-      logger.debug("Starting job.");
-      const startedAt = DateTime.utc().valueOf();
-      descriptor.status = descriptor.status || { startedAt, retry: 0 };
-      descriptor.status.startedAt = startedAt;
-
       this._jobCtor = this.jobMapping[descriptor.name];
       if (!this._jobCtor) {
         throw new Error(`No job handler found for '${descriptor.name}'.`);
@@ -61,7 +61,7 @@ export class Worker<TDependencies extends IDependencies> {
 
       const stack: Array<string> = err.stack.split("\n").map((s: string) => s.trim());
 
-      descriptor.status.error = { message: stack.shift() };
+      descriptor.status.error = { message: stack.shift() || "no error message provided." };
 
       const bt = descriptor.options.backtrace;
       if (bt) {
@@ -73,7 +73,7 @@ export class Worker<TDependencies extends IDependencies> {
       }
     }
 
-    this.descriptor.status.endedAt = DateTime.utc().valueOf();
+    descriptor.status.endedAt = DateTime.utc().valueOf();
     this._done = true;
 
     await onComplete();

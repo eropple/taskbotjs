@@ -42,7 +42,7 @@ export class JobBase {
   protected readonly logger: Bunyan;
 
   constructor(baseLogger: Bunyan, descriptor?: JobDescriptor) {
-    this.descriptor = descriptor;
+    this.descriptor = descriptor || null;
     this.jobId = this.descriptor ? this.descriptor.id : generateJobId(true);
 
     this.logger = baseLogger.child({ component: this.constructor.name, jobId: this.jobId });

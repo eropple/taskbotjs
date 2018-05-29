@@ -280,7 +280,8 @@ export class Config<TDependencies extends IDependencies> extends ConfigBase {
     // TODO:  so this is awful, but it's happening because otherwise _.cloneDeep does
     //        a real number on Bunyan. Maybe there's a better way.
     const logger = this.logger;
-    this.logger = null;
+    // can't set this to null, but it does allow delete
+    delete this.logger;
 
     const newConfig = _.cloneDeep(this);
     this.logger = logger;

@@ -25,7 +25,7 @@ export class Metrics extends ServerPlugin<PluginConfig> {
     this.logger.info("Attaching metrics listeners.");
 
     this.server.onJobStarting(async (jd: JobDescriptor) => {
-      const date = DateTime.fromMillis(jd.status.startedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
+      const date = DateTime.fromMillis(jd.status!.startedAt!, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/processed";
       const dateKey = "metrics/processed/" + date;
       await this.withClient(async (taskbot) => {
@@ -35,7 +35,7 @@ export class Metrics extends ServerPlugin<PluginConfig> {
     });
 
     this.server.onJobComplete(async (jd: JobDescriptor) => {
-      const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
+      const date = DateTime.fromMillis(jd.status!.endedAt!, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/completed";
       const dateKey = "metrics/completed/" + date;
       await this.withClient(async (taskbot) => {
@@ -45,7 +45,7 @@ export class Metrics extends ServerPlugin<PluginConfig> {
     });
 
     this.server.onJobError(async (jd: JobDescriptor) => {
-      const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
+      const date = DateTime.fromMillis(jd.status!.endedAt!, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/errored";
       const dateKey = "metrics/errored/" + date;
       await this.withClient(async (taskbot) => {
@@ -55,7 +55,7 @@ export class Metrics extends ServerPlugin<PluginConfig> {
     });
 
     this.server.onJobDeath(async (jd: JobDescriptor) => {
-      const date = DateTime.fromMillis(jd.status.endedAt, { zone: "UTC" }).toFormat(LUXON_YMD);
+      const date = DateTime.fromMillis(jd.status!.endedAt!, { zone: "UTC" }).toFormat(LUXON_YMD);
       const allKey = "metrics/died";
       const dateKey = "metrics/died/" + date;
       await this.withClient(async (taskbot) => {

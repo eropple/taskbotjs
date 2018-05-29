@@ -8,6 +8,7 @@ import { Client } from ".";
 import { ISortedSet, ICleanableSet } from "../ClientBase/ISortedSet";
 import { Multi } from "redis";
 import { DateTime } from "luxon";
+import { notEmpty } from "../util/notEmpty";
 
 // TODO: contribute a typings?
 const CanonicalJSON = require("canonicaljson");
@@ -141,7 +142,7 @@ export class ScoreSortedSet implements ISortedSet {
 
       for (let item of items) {
         if (!item) {
-          return null;
+          return;
         }
 
         await fn(item);
@@ -217,7 +218,7 @@ export class ScoreSortedSet implements ISortedSet {
    */
   async peek(limit: number, offset: number): Promise<Array<JobDescriptor>> {
     const jobKeys = await this.asyncRedis.zrange(this.key, offset, offset + limit);
-    return (await this.client.readJobs(jobKeys)).filter((jd) => jd);
+    return (await this.client.readJobs(jobKeys)).filter(notEmpty);
   }
 
   protected async scanIdBatches(fn: (jobIds: Array<string>) => any): Promise<void> {

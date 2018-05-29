@@ -51,7 +51,6 @@ export function buildClientPool<TStorage, TClient extends ClientBase<TStorage>>(
 
 export abstract class ClientRoot {
   abstract get connected(): boolean;
-  readonly requiresAcknowledge: boolean;
 
   abstract get retrySet(): IRetries;
   abstract get scheduleSet(): IScheduled;
@@ -61,7 +60,7 @@ export abstract class ClientRoot {
 
   async performAsync(jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
     // TypeScript dsallows default arguments in abstract class methods or interface methods, so...
-    return this.doPerformAsync(jobType, args, null);
+    return this.doPerformAsync(jobType, args);
   }
 
   async performAsyncWithOptions(jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
@@ -69,7 +68,7 @@ export abstract class ClientRoot {
   }
 
   async performAt(date: DateLike, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
-    return this.doPerformAt(date, jobType, args, null);
+    return this.doPerformAt(date, jobType, args);
   }
 
   async performAtWithOptions(date: DateLike, jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {

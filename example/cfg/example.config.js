@@ -34,7 +34,7 @@ config.intake = {
   ]
 };
 
-config.dependencies = (baseLogger) => new NoDeps(baseLogger);
+config.dependencies = (baseLogger, taskbot) => new NoDeps(baseLogger, taskbot);
 
 config.logger = Bunyan.createLogger({
   name: "consumer",

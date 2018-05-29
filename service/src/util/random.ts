@@ -20,13 +20,13 @@ export function intervalSplayMilliseconds(interval: Duration | DurationFields, s
   let s: Duration;
 
   if (!(interval instanceof Duration)) {
-    i = Duration.fromObject(i);
+    i = Duration.fromObject(interval);
   } else {
     i = interval;
   }
 
   if (!(splay instanceof Duration)) {
-    s = Duration.fromObject(s);
+    s = Duration.fromObject(splay);
   } else {
     s = splay;
   }

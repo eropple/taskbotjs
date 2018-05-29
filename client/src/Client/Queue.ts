@@ -5,6 +5,7 @@ import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
 import { IQueue } from "../ClientBase/IQueue";
 import { Client } from ".";
 import { Multi } from "redis";
+import { notEmpty } from "../util/notEmpty";
 
 const CanonicalJSON = require("canonicaljson");
 
@@ -39,7 +40,7 @@ export class Queue implements IQueue {
       return [];
     }
 
-    return (await this.client.readJobs(jobKeys)).filter((jd) => jd);
+    return (await this.client.readJobs(jobKeys)).filter(notEmpty);
   }
 
   async map<T>(fn: (data: JobDescriptor) => T | Promise<T>): Promise<Array<T>> {

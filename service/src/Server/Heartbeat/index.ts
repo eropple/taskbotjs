@@ -19,7 +19,7 @@ import { PluginConfig } from "../../Config/Config";
 export class Heartbeat extends ServerPlugin<PluginConfig> {
   private static readonly CONFIG: PluginConfig = { enabled: true };
 
-  private timeout: NodeJS.Timer;
+  private timeout: NodeJS.Timer | null = null;
   private isShuttingDown: boolean = false;
 
   // this plugin requires no plugin and is always enabled.
