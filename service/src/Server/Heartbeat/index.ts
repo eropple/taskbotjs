@@ -7,7 +7,7 @@ import {
 } from "@taskbotjs/client";
 
 import { ServerBase } from "..";
-import { ServerPlugin } from "../../ServerPlugin";
+import { ServerPlugin } from "../ServerPlugin";
 import { VERSION, FLAVOR } from "../..";
 import { PluginConfig } from "../../Config/Config";
 

@@ -5,7 +5,7 @@ import {
 } from "@taskbotjs/client";
 
 import { ScheduleConfig } from "../../Config/Config";
-import { ServerPoller } from "../../ServerPoller";
+import { ServerPoller } from "../ServerPoller";
 
 export class ScheduledPoller extends ServerPoller<ScheduleConfig> {
   protected get config(): ScheduleConfig { return this.server.config.schedule; }

@@ -9,11 +9,11 @@ export {
 export {
   ConstructableServerPlugin,
   ServerPlugin
-} from "./ServerPlugin";
+} from "./Server/ServerPlugin";
 
 export {
   ServerPoller
-} from "./ServerPoller";
+} from "./Server/ServerPoller";
 
 export const FLAVOR = "oss";
 export const VERSION = require("../package.json").version;

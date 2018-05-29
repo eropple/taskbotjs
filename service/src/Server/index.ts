@@ -30,8 +30,8 @@ import { ScheduledPoller } from "./pollers/ScheduledPoller";
 
 import { sleepFor, yieldExecution } from "../util";
 import { ClientRequest } from "http";
-import { ServerPlugin, ServerPluginBase } from "../ServerPlugin";
-import { ServerPoller } from "../ServerPoller";
+import { ServerPlugin, ServerPluginBase } from "./ServerPlugin";
+import { ServerPoller } from "./ServerPoller";
 
 import { Metrics } from "./Metrics";
 import { Heartbeat } from "./Heartbeat";

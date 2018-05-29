@@ -5,7 +5,7 @@ import {
 } from "@taskbotjs/client";
 
 import { RetryConfig } from "../../Config/Config";
-import { ServerPoller } from "../../ServerPoller";
+import { ServerPoller } from "../ServerPoller";
 
 export class RetryPoller extends ServerPoller<RetryConfig> {
   protected get config(): RetryConfig { return this.server.config.retry; }

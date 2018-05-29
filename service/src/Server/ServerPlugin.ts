@@ -5,7 +5,7 @@ import {
   ClientRoot
 } from "@taskbotjs/client";
 
-import { ServerBase } from "../Server";
+import { ServerBase } from ".";
 import { PluginConfig } from "../Config/Config";
 
 export interface ConstructableServerPlugin {

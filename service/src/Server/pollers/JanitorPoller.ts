@@ -6,7 +6,7 @@ import {
 } from "@taskbotjs/client";
 
 import { JanitorConfig } from "../../Config/Config";
-import { ServerPoller } from "../../ServerPoller";
+import { ServerPoller } from "../ServerPoller";
 import { intervalSplayDuration } from "../../util/random";
 
 export class JanitorPoller extends ServerPoller<JanitorConfig> {

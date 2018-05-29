@@ -7,7 +7,7 @@ import {
   JobDescriptor,
   LUXON_YMD
 } from "@taskbotjs/client";
-import { ServerPlugin } from "../../ServerPlugin";
+import { ServerPlugin } from "../ServerPlugin";
 import { PluginConfig } from "../../Config/Config";
 
 /**

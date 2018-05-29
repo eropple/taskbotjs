@@ -21,7 +21,7 @@ import {
   RetryFunctionTimingFunction
 } from "@taskbotjs/client";
 
-import { ConstructableServerPlugin } from "../ServerPlugin";
+import { ConstructableServerPlugin } from "../Server/ServerPlugin";
 import { Duration } from "luxon";
 
 export type FinalizedConfig<TDependencies extends IDependencies> = DeepReadonly<Config<TDependencies>>;

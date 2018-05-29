@@ -5,7 +5,7 @@ import {
 } from "@taskbotjs/client";
 
 import { TimeInterval } from "../Config";
-import { ServerPlugin } from "../ServerPlugin";
+import { ServerPlugin } from "./ServerPlugin";
 import { sleepFor } from "../util";
 import { PollerConfig } from "../Config/Config";
 import { intervalSplayMilliseconds } from "../util/random";
