@@ -5,15 +5,17 @@ import {
   ClientRoot
 } from "@taskbotjs/client";
 
-import { ServerBase } from ".";
-import { PluginConfig } from "../Config/Config";
+import { ServerBase } from "..";
+import { PluginConfig, TimeInterval } from "../../Config/Config";
+import { PollerFunction } from "../Poller";
+import { MiddlewareFunction } from "../Middleware";
 
 export interface ConstructableServerPlugin {
   new(baseLogger: Bunyan, server: ServerBase): ServerPluginBase;
 }
 
 export abstract class ServerPluginBase {
-  protected readonly logger: Bunyan;
+  readonly logger: Bunyan;
 
   constructor(baseLogger: Bunyan, protected readonly server: ServerBase) {
     this.logger = baseLogger.child({ component: this.constructor.name, componentType: "plugin" });
@@ -38,6 +40,14 @@ export abstract class ServerPluginBase {
 
   protected async withClient<T>(fn: (taskbot: ClientRoot) => Promise<T>): Promise<T> {
     return this.server.clientPool.use((taskbot) => fn(taskbot));
+  }
+
+  protected registerPoller(fn: PollerFunction, frequency: TimeInterval): void {
+    this.server.registerPoller(this, fn, frequency);
+  }
+
+  protected registerMiddleware(fn: MiddlewareFunction): void {
+    this.server.registerMiddleware(this, fn);
   }
 }
 

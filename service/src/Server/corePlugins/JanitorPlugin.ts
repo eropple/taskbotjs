@@ -6,13 +6,15 @@ import {
 } from "@taskbotjs/client";
 
 import { JanitorConfig } from "../../Config/Config";
-import { ServerPoller } from "../ServerPoller";
 import { intervalSplayDuration } from "../../util/random";
+import { ServerPlugin } from "../ServerPlugin";
 
-export class JanitorPoller extends ServerPoller<JanitorConfig> {
+export class JanitorPlugin extends ServerPlugin<JanitorConfig> {
   protected get config(): JanitorConfig { return this.server.config.janitor; }
 
-  async initialize() {}
+  async initialize() {
+    this.registerPoller(this.loopIter, this.config.polling);
+  }
   async cleanup() {}
 
   async loopIter(taskbot: ClientRoot): Promise<void> {

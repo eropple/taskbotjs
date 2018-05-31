@@ -5,12 +5,14 @@ import {
 } from "@taskbotjs/client";
 
 import { RetryConfig } from "../../Config/Config";
-import { ServerPoller } from "../ServerPoller";
+import { ServerPlugin } from "../ServerPlugin";
 
-export class RetryPoller extends ServerPoller<RetryConfig> {
+export class RetryPlugin extends ServerPlugin<RetryConfig> {
   protected get config(): RetryConfig { return this.server.config.retry; }
 
-  async initialize() {}
+  async initialize() {
+    this.registerPoller(this.loopIter, this.config.polling);
+  }
   async cleanup() {}
 
   async loopIter(taskbot: ClientRoot): Promise<void> {

@@ -5,12 +5,14 @@ import {
 } from "@taskbotjs/client";
 
 import { ScheduleConfig } from "../../Config/Config";
-import { ServerPoller } from "../ServerPoller";
+import { ServerPlugin } from "../ServerPlugin";
 
-export class ScheduledPoller extends ServerPoller<ScheduleConfig> {
+export class ScheduledPlugin extends ServerPlugin<ScheduleConfig> {
   protected get config(): ScheduleConfig { return this.server.config.schedule; }
 
-  async initialize() {}
+  async initialize() {
+    this.registerPoller(this.loopIter, this.config.polling);
+  }
   async cleanup() {}
 
   async loopIter(taskbot: ClientRoot): Promise<void> {

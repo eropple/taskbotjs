@@ -6,7 +6,10 @@ import { DeepReadonly } from "deep-freeze";
 import {
   JobDescriptor, IDependencies, Job, ConstructableJob, ClientRoot
 } from "@taskbotjs/client";
+
 import { JobMapping } from "../Config";
+import { Middleware, MiddlewarePhase } from "./Middleware";
+import { ServerBase } from ".";
 
 /**
  * Job runner; accepts a descriptor and handles the runtime lifecycle
@@ -35,7 +38,7 @@ export class Worker<TDependencies extends IDependencies> {
     this.logger = baseLogger.child({ component: "Worker", jobId: descriptor.id });
   }
 
-  async start(deps: TDependencies, onStarting: (jd: JobDescriptor) => any, onComplete: () => Promise<void>): Promise<void> {
+  async start(deps: TDependencies, server: ServerBase, middleware: Middleware, onStarting: (jd: JobDescriptor) => any, onComplete: () => Promise<void>): Promise<void> {
     const logger = this.logger;
 
     logger.debug("Starting job.");
@@ -46,6 +49,13 @@ export class Worker<TDependencies extends IDependencies> {
     await deps.taskbot.updateJob(descriptor);
 
     try {
+      try {
+        middleware.resolve(MiddlewarePhase.STARTING, descriptor, server);
+      } catch (err) {
+        logger.error(err, "Error in job middleware during STARTING phase.");
+        throw err;
+      }
+
       this._jobCtor = this.jobMapping[descriptor.name];
       if (!this._jobCtor) {
         throw new Error(`No job handler found for '${descriptor.name}'.`);
@@ -55,6 +65,14 @@ export class Worker<TDependencies extends IDependencies> {
 
       const job = new this._jobCtor(deps, descriptor);
       await job.perform.apply(job, this.descriptor.args);
+
+      try {
+        middleware.resolve(MiddlewarePhase.COMPLETED, descriptor, server);
+      } catch (err) {
+        logger.error(err, "Error in job middleware during COMPLETED phase.");
+        throw err;
+      }
+
       logger.debug("Job completed successfully.");
     } catch (err) {
       logger.error(err, "Error in job execution.");
@@ -71,6 +89,13 @@ export class Worker<TDependencies extends IDependencies> {
         } else {
           descriptor.status.error.backtrace = stack;
         }
+      }
+
+      try {
+        middleware.resolve(MiddlewarePhase.ERRORED, descriptor, server);
+      } catch (err) {
+        logger.error(err, "Error in job middleware during ERRORED phase.");
+        throw err;
       }
     }
 

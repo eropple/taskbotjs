@@ -17,7 +17,7 @@ import {
   ClientRoot
 } from "@taskbotjs/client";
 
-import { Config, ConfigBase } from "../Config";
+import { Config, ConfigBase, TimeInterval } from "../Config";
 import {
   buildIntake,
   Intake,
@@ -25,19 +25,20 @@ import {
 } from "./intakes";
 import { Worker } from "./Worker";
 
-import { RetryPoller } from "./pollers/RetryPoller";
-import { ScheduledPoller } from "./pollers/ScheduledPoller";
+import { RetryPlugin } from "./corePlugins/RetryPlugin";
+import { ScheduledPlugin } from "./corePlugins/ScheduledPlugin";
+import { JanitorPlugin } from "./corePlugins/JanitorPlugin";
 
 import { sleepFor, yieldExecution } from "../util";
 import { ClientRequest } from "http";
 import { ServerPlugin, ServerPluginBase } from "./ServerPlugin";
-import { ServerPoller } from "./ServerPoller";
+import { Poller } from "./Poller";
 
 import { Metrics } from "./Metrics";
 import { Heartbeat } from "./Heartbeat";
 import { VERSION, FLAVOR } from "..";
 import { worker } from "cluster";
-import { JanitorPoller } from "./pollers/JanitorPoller";
+import { MiddlewareFunction, Middleware } from "./Middleware";
 
 const chance = new Chance();
 
@@ -54,6 +55,13 @@ export abstract class ServerBase extends EventEmitter {
    * The configuration for this server.
    */
   abstract get config(): ConfigBase;
+
+  /**
+   * If true, the server has been initialized. Attempting to modify its
+   * configuration on the fly (such as adding a new poller) will result in a
+   * runtime error.
+   */
+  abstract get initialized(): boolean;
 
   /**
    * The server's client pool. Exposed to allow external libraries (particularly
@@ -120,6 +128,20 @@ export abstract class ServerBase extends EventEmitter {
    */
   abstract async shutdown(): Promise<void>;
 
+  /**
+   * @private
+   * @param plugin The plugin registering the poller.
+   * @param frequency The interval and splay between runs of the poller.
+   * @param fn The body of the poller.
+   */
+  abstract registerPoller(plugin: ServerPluginBase, fn: (taskbot: ClientRoot) => Promise<void>, frequency: TimeInterval): void;
+
+  /**
+   * @private
+   * @param fn The middleware function to apply to the server.
+   */
+  abstract registerMiddleware(plugin: ServerPluginBase, fn: MiddlewareFunction): void;
+
   constructor(cp: ClientPool) {
     super();
 
@@ -141,17 +163,17 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
   readonly baseLogger: Bunyan;
   private readonly logger: Bunyan;
 
+  private _initialized: boolean = false;
+  get initialized(): boolean { return this._initialized; }
+
   /**
    * This server's configuration.
    */
   readonly config: Config<TDependencies>;
-  private readonly metrics: Metrics;
-  private readonly heartbeat: Heartbeat;
-  private readonly retryPoller: RetryPoller;
-  private readonly scheduledPoller: ScheduledPoller;
-  private readonly janitorPoller: JanitorPoller;
 
   private plugins: Array<ServerPluginBase> = [];
+  private readonly pollers: Array<Poller> = [];
+  private readonly middleware: Middleware = new Middleware();
   private isShuttingDown: boolean = false;
   private intakeLoopTerminated: boolean = false;
   private workerHandleLoopTerminated: boolean = false;
@@ -169,13 +191,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.logger = this.baseLogger.child({ component: "Server" });
     this.logger.info({ version: VERSION, flavor: FLAVOR }, "Instantiating server.");
 
-    this.metrics = new Metrics(this.baseLogger, this);
-    this.heartbeat = new Heartbeat(this.baseLogger, this);
     this.intake = buildIntake(this.config, this, this.logger);
-
-    this.retryPoller = new RetryPoller(this.baseLogger, this);
-    this.scheduledPoller = new ScheduledPoller(this.baseLogger, this);
-    this.janitorPoller = new JanitorPoller(this.baseLogger, this);
   }
 
   get activeWorkerCount() { return this.activeWorkers.length; }
@@ -186,13 +202,12 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     }
 
     this.plugins = _.concat([
-      this.metrics,
-      this.heartbeat,
-
-      this.retryPoller,
-      this.scheduledPoller,
-      this.janitorPoller
-    ], this.config.plugins.map((p) => new p(this.logger, this)));
+      Metrics,
+      Heartbeat,
+      RetryPlugin,
+      ScheduledPlugin,
+      JanitorPlugin
+    ], this.config.plugins).map((p) => new p(this.logger, this));
 
     this.logger.info({ jobHandlerCount: Object.values(this.config.jobMap).length }, "Starting server.");
 
@@ -205,10 +220,8 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.intake.initialize();
 
     this.logger.debug("Initializing pollers.");
-    for (let poller of this.plugins.filter((p) => p instanceof ServerPoller)) {
-      // TODO: go back and redesign to type-erase ServerPoller's generic type.
-      // this is intentionally not awaited; we don't care about its return
-      (poller as any).doStart();
+    for (let poller of this.pollers) {
+      await poller.doStart();
     }
 
     if (this.config.listenToSignals) {
@@ -229,6 +242,8 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       });
     }
 
+    this._initialized = true;
+
     this.intakeLoop();
     this.workerHandleLoop();
 
@@ -240,9 +255,8 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.logger.info("Shutting down server.");
 
     this.logger.debug("Stopping pollers.");
-    for (let poller of this.plugins.filter((p) => p instanceof ServerPoller)) {
-      // TODO: go back and redesign to type-erase ServerPoller's generic type.
-      await (poller as any).doStop();
+    for (let poller of this.pollers) {
+      await poller.doStop();
     }
 
     // We need to wait for the main loops to terminate in order to make
@@ -263,6 +277,28 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     this.logger.info("Server shut down without incident.");
     this.emit(this.onShutdown);
+  }
+
+  /**
+   * @private
+   */
+  registerPoller(plugin: ServerPluginBase, fn: (taskbot: ClientRoot) => Promise<void>, frequency: TimeInterval): void {
+    if (this._initialized) {
+      throw new Error("Cannot register a poller after the Server has been initialized.");
+    }
+
+    this.pollers.push(new Poller(plugin.logger, this, fn, frequency));
+  }
+
+  /**
+   * @private
+   */
+  registerMiddleware(plugin: ServerPluginBase, fn: MiddlewareFunction) {
+    if (this._initialized) {
+      throw new Error("Cannot register middleware after the Server has been initialized.");
+    }
+
+    this.middleware.register(plugin.logger, fn);
   }
 
   private async intakeLoop(): Promise<void> {
@@ -453,6 +489,8 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       const taskbot = await this.clientPool.acquire();
       newWorker.start(
         this.config.dependencies(this.baseLogger, taskbot),
+        this,
+        this.middleware,
         async (jd: JobDescriptor) => this.emit(this.onJobStarting, jd),
         async () => this.clientPool.release(taskbot)
       );
