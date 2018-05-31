@@ -8,7 +8,6 @@ import {
 import { ServerBase } from "..";
 import { PluginConfig, TimeInterval } from "../../Config/Config";
 import { PollerFunction } from "../Poller";
-import { MiddlewareFunction } from "../Middleware";
 
 export interface ConstructableServerPlugin {
   new(baseLogger: Bunyan, server: ServerBase): ServerPluginBase;
@@ -44,10 +43,6 @@ export abstract class ServerPluginBase {
 
   protected registerPoller(fn: PollerFunction, frequency: TimeInterval): void {
     this.server.registerPoller(this, fn, frequency);
-  }
-
-  protected registerMiddleware(fn: MiddlewareFunction): void {
-    this.server.registerMiddleware(this, fn);
   }
 }
 

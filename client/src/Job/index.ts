@@ -12,6 +12,5 @@ export function optionsFor(jobType: ConstructableJobBase, userOptions?: JobDescr
     queue: jobType.defaultQueue,
     maxRetries: jobType.maxRetries,
     backtrace: jobType.backtrace,
-    skipDeadJob: jobType.skipDeadJob
   }, userOptions || {});
 }

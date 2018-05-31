@@ -38,6 +38,12 @@ export {
 } from "./JobMetadata"
 
 export {
+  ClientMiddleware,
+  ClientMiddlewarePhase,
+  ClientMiddlewareFunction
+} from "./ClientMiddleware";
+
+export {
   RetryFunctionTimingFunction,
 
   constantBackoff,

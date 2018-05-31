@@ -11,6 +11,8 @@ const { FutureJob } = require("../dist/jobs/FutureJob");
 const { ArgJob } = require("../dist/jobs/ArgJob");
 const { LongJob } = require("../dist/jobs/LongJob");
 
+const { exampleClientMiddleware } = require("../dist/exampleClientMiddleware");
+
 // If this config were TypeScript, it'd be `Config<NoDeps>`; all jobs _should_
 // (though, technically, do not have to) expect the same generic subtype of
 // `IDependencies` and the `Config` class should use the same one. This is not
@@ -60,5 +62,9 @@ config.logger = Bunyan.createLogger({
 });
 
 config.register(PingJob, PongJob, FailJob, FutureJob, ArgJob, LongJob);
+
+config.registerMiddleware(
+  exampleClientMiddleware
+);
 
 module.exports = config;

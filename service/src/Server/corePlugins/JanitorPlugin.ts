@@ -13,7 +13,7 @@ export class JanitorPlugin extends ServerPlugin<JanitorConfig> {
   protected get config(): JanitorConfig { return this.server.config.janitor; }
 
   async initialize() {
-    this.registerPoller(this.loopIter, this.config.polling);
+    this.registerPoller(this.loopIter.bind(this), this.config.polling);
   }
   async cleanup() {}
 

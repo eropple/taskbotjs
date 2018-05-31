@@ -11,8 +11,10 @@ import { IQueue } from "./IQueue";
 
 import { JobBase } from "../Job/Job";
 import { ConstructableJobBase } from "../Job/ConstructableJob";
-import { ICounter, IScalar, WorkerInfo, MetricDayRange } from "..";
-import { QueueInfo, StorageInfo, BasicMetrics } from "../domain";
+import { ICounter } from "./ICounter";
+import { IScalar } from "./IScalar";
+import { ClientMiddleware, ClientMiddlewarePhase } from "../ClientMiddleware";
+import { QueueInfo, StorageInfo, BasicMetrics, WorkerInfo, MetricDayRange } from "../domain";
 import { IRetries, IDead, IScheduled, IDone } from "./ISortedSet";
 export { IRetries, IDead, IScheduled } from "./ISortedSet";
 
@@ -23,7 +25,7 @@ export type DateLike = Date | DateTime | { valueOf(): number };
 export type ClientPool = GenericPool.Pool<ClientRoot>;
 export type ClientPoolBase<TStorage, TClient extends ClientBase<TStorage>> = GenericPool.Pool<TClient>;
 export type ConstructableClient<TStorage, TClient extends ClientBase<TStorage>> =
-  { new(logger: Bunyan, storage: TStorage): TClient };
+  { new(logger: Bunyan, storage: TStorage, middleware?: ClientMiddleware): TClient };
 
 let nextClientId = 1;
 
@@ -31,12 +33,14 @@ export function buildClientPool<TStorage, TClient extends ClientBase<TStorage>>(
   type: ConstructableClient<TStorage, TClient>,
   storagePool: GenericPool.Pool<TStorage>,
   baseLogger: Bunyan,
+  clientMiddleware?: ClientMiddleware,
   poolOptions?: GenericPool.Options
 ): ClientPool {
   const factory: GenericPool.Factory<TClient> = {
     create: async (): Promise<TClient> => new type(
       baseLogger.child({ component: type.name, clientId: nextClientId++ }),
-      await storagePool.acquire()
+      await storagePool.acquire(),
+      clientMiddleware
     ),
     destroy: async (client: TClient): Promise<any> => storagePool.release(client.storage)
   };
@@ -50,6 +54,12 @@ export function buildClientPool<TStorage, TClient extends ClientBase<TStorage>>(
 }
 
 export abstract class ClientRoot {
+  protected readonly middleware: ClientMiddleware;
+
+  constructor(middleware?: ClientMiddleware) {
+    this.middleware = middleware || new ClientMiddleware();
+  }
+
   abstract get connected(): boolean;
 
   abstract get retrySet(): IRetries;
@@ -81,7 +91,7 @@ export abstract class ClientRoot {
   abstract async incrementCounter(counterName: string): Promise<number>;
   abstract async withCounter<T>(counterName: string, fn: (counter: ICounter) => Promise<T>): Promise<T>;
 
-  abstract async updateJob(descriptor: JobDescriptor): Promise<void>;
+  abstract async updateJob(descriptor: JobDescriptor): Promise<JobDescriptor>;
   abstract async readJob(id: string): Promise<JobDescriptor | null>;
   abstract async readJobs(ids: Array<string>): Promise<Array<JobDescriptor | null>>;
   abstract async unsafeDeleteJob(id: string): Promise<void>;
@@ -111,8 +121,8 @@ export abstract class ClientBase<TStorage> extends ClientRoot {
 
   readonly requiresAcknowledge: boolean = false;
 
-  constructor(logger: Bunyan, storage: TStorage) {
-    super();
+  constructor(logger: Bunyan, storage: TStorage, middleware?: ClientMiddleware) {
+    super(middleware);
     this.storage = storage;
     this.logger = logger;
 
@@ -121,11 +131,13 @@ export abstract class ClientBase<TStorage> extends ClientRoot {
 
   async doPerformAsync(jobType: ConstructableJobBase, args: Array<any> = [], userOptions?: JobDescriptorOptions): Promise<string> {
     const descriptor = this.buildBaseDescriptor(jobType, args, userOptions);
+    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     return this.queue(descriptor.options.queue).enqueue(descriptor);
   }
 
   async doPerformAt(date: DateLike, jobType: ConstructableJobBase, args: Array<any> = [], userOptions?: JobDescriptorOptions): Promise<string> {
     const descriptor = this.buildBaseDescriptor(jobType, args, userOptions);
+    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     descriptor.orchestration = { scheduledFor: date.valueOf() };
 
     await this.scheduleSet.add(descriptor);

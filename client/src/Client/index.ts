@@ -29,6 +29,7 @@ import { WorkerInfo, MetricDayRange, LUXON_YMD, QueueInfo, StorageInfo } from ".
 import { BasicMetrics } from "../domain";
 import { Multi } from "redis";
 import { IDone } from "../ClientBase/ISortedSet";
+import { ClientMiddlewarePhase, ClientMiddleware } from "../ClientMiddleware";
 
 const CanonicalJSON = require("canonicaljson");
 
@@ -42,8 +43,8 @@ export class Client extends ClientBase<AsyncRedis> {
 
   private readonly queues: { [queueName: string]: Queue } = {};
 
-  constructor(logger: Bunyan, asyncRedis: AsyncRedis) {
-    super(logger, asyncRedis);
+  constructor(logger: Bunyan, asyncRedis: AsyncRedis, middleware?: ClientMiddleware) {
+    super(logger, asyncRedis, middleware);
 
     this.retrySet = new RetrySortedSet(this.logger, this, this.asyncRedis);
     this.scheduleSet = new ScheduledSortedSet(this.logger, this, this.asyncRedis);
@@ -62,18 +63,24 @@ export class Client extends ClientBase<AsyncRedis> {
     return q;
   }
 
-  static withRedisPool(baseLogger: Bunyan, pool: RedisPool, poolOptions?: PoolOptions): ClientPool {
-    return buildClientPool(Client, pool, baseLogger, poolOptions);
+  static withRedisPool(
+    baseLogger: Bunyan,
+    pool: RedisPool,
+    middleware?: ClientMiddleware,
+    poolOptions?: PoolOptions
+  ): ClientPool {
+    return buildClientPool(Client, pool, baseLogger, middleware, poolOptions);
   }
   static withRedisOptions(
     baseLogger: Bunyan,
     options: RedisClientOptions,
+    middleware?: ClientMiddleware,
     redisPoolOptions?: PoolOptions,
     clientPoolOptions?: PoolOptions
   ) : ClientPool {
     // baseLogger.debug({ options, redisPoolOptions }, "Instantiating Redis pool.");
     const redisPool = buildRedisPool(options, redisPoolOptions);
-    return buildClientPool(Client, redisPool, baseLogger, clientPoolOptions);
+    return buildClientPool(Client, redisPool, baseLogger, middleware, clientPoolOptions);
   }
 
   get connected(): boolean { return this.storage.redis.connected; }
@@ -90,19 +97,33 @@ export class Client extends ClientBase<AsyncRedis> {
     return fn(new Counter(this.asyncRedis, counterName));
   }
 
-  async updateJob(descriptor: JobDescriptor): Promise<void> {
+  async updateJob(descriptor: JobDescriptor): Promise<JobDescriptor> {
     const key = `jobs/${descriptor.id}`;
     this.logger.trace({ jobId: descriptor.id }, "Updating job.");
 
-    const json = CanonicalJSON.stringify(descriptor);
+    const d = _.cloneDeep(descriptor);
+    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, d, this);
+
+    const json = CanonicalJSON.stringify(d) as string;
     await this.asyncRedis.set(key, json);
+
+    // This is to "re-hydrate" the object for continued use in TaskBotJS. For example,
+    // take the argument encryption case: the WRITE middleware would have encrypted
+    // it, but we need to decrypt it back into memory for continued use otherwise a
+    // middleware that just did something like "increment a field by 1 on every write"
+    // would lose its value if the descriptor object was reused after the update.
+    await this.middleware.resolve(ClientMiddlewarePhase.READ, d, this);
+    return d;
   }
 
-  _multiUpdateJob(multi: Multi, descriptor: JobDescriptor): Multi {
+  async _multiUpdateJob(multi: Multi, descriptor: JobDescriptor): Promise<Multi> {
     const key = `jobs/${descriptor.id}`;
     this.logger.trace({ jobId: descriptor.id }, "Updating job in multi.");
 
-    const json = CanonicalJSON.stringify(descriptor);
+    const d = _.cloneDeep(descriptor);
+    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, d, this);
+
+    const json = CanonicalJSON.stringify(d) as string;
     return multi.set(key, json);
   }
 
@@ -115,7 +136,9 @@ export class Client extends ClientBase<AsyncRedis> {
       this.logger.trace({ jobId: id }, `Job '${id}' not found in the store.`);
       return null;
     } else {
-      return CanonicalJSON.parse(json);
+      const jd = CanonicalJSON.parse(json) as JobDescriptor;
+      await this.middleware.resolve(ClientMiddlewarePhase.READ, jd, this);
+      return jd;
     }
   }
 
@@ -126,13 +149,17 @@ export class Client extends ClientBase<AsyncRedis> {
 
     const jsons = await this.asyncRedis.mget(...keys);
 
-    return (jsons as (string | null)[]).map((json: string | null) => {
-      if (json) {
-        return CanonicalJSON.parse(json) as JobDescriptor;
-      } else {
-        return null;
-      }
-    });
+    return Promise.all(
+      (jsons as (string | null)[]).map(async (json: string | null) => {
+        if (json) {
+          const jd = CanonicalJSON.parse(json) as JobDescriptor;
+          await this.middleware.resolve(ClientMiddlewarePhase.READ, jd, this);
+          return jd;
+        } else {
+          return null;
+        }
+      })
+    );
   }
 
   async unsafeDeleteJob(jobOrJobId: string | JobDescriptor): Promise<void> {

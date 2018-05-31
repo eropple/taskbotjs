@@ -18,7 +18,9 @@ import {
 
   buildRedisPool,
   PoolOptions,
-  RetryFunctionTimingFunction
+  RetryFunctionTimingFunction,
+  ClientMiddleware,
+  ClientMiddlewareFunction
 } from "@taskbotjs/client";
 
 import { ConstructableServerPlugin } from "../Server/ServerPlugin";
@@ -130,8 +132,18 @@ export interface JanitorConfig extends PollerConfig {
  * Configuration details for the Redis connector.
  */
 export interface RedisOptions {
+  /**
+   * Standard Redis connection options.
+   */
   options: RedisClientOptions;
-  pool: PoolOptions;
+
+  /**
+   * Custom options for the Redis pool. This has some interaction with the
+   * client pool, which is itself based on the runtime configuration of the
+   * server. You can set this, but unless you know what you are doing, I
+   * advise leaving this alone.
+   */
+  pool?: PoolOptions;
 }
 
 /**
@@ -234,6 +246,24 @@ export class ConfigBase {
   plugins: Array<ConstructableServerPlugin> = [];
 
   /**
+   * A set of client middlewares to apply to any clients used by the server. As this
+   * requires attaching a logger to middleware, I recommend using the `registerMiddleware`
+   * helper function instead, but power users can attach a custom logger to their
+   * middleware by manipulating this directly.
+   *
+   * @see registerMiddleware
+   */
+  clientMiddleware: ClientMiddleware = new ClientMiddleware();
+
+  /**
+   *
+   * @param fn
+   */
+  registerMiddleware(fn: ClientMiddlewareFunction) {
+    this.clientMiddleware.register(this.logger, fn);
+  }
+
+  /**
    * Generic config extensions. Nothing in TaskBotJS proper uses this field, but it's
    * provided for plugins or other uses. Please note that Config objects are deeply
    * copied before being used by the server; putting complex objects into this field
@@ -249,8 +279,14 @@ export class ConfigBase {
   buildClientPool() {
     if (this.redis) {
       const min = 4;
-      const max = 6 + this.concurrency;
-      return Client.withRedisOptions(this.logger, this.redis.options, this.redis.pool, { min, max });
+      const max = this.plugins.length + 4 + this.concurrency;
+      return Client.withRedisOptions(
+        this.logger,
+        this.redis.options,
+        this.clientMiddleware,
+        this.redis.pool || { min, max },
+        { min, max }
+      );
     } else {
       throw new Error("No client configuration found.");
     }

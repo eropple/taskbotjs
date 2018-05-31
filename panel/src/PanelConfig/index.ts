@@ -6,12 +6,13 @@ import {
   RedisClientOptions,
   PoolOptions,
   ClientPool,
-  Client
+  Client,
+  ClientMiddleware
 } from "@taskbotjs/client";
 
 export interface RedisOptions {
   options: RedisClientOptions;
-  pool: PoolOptions;
+  pool?: PoolOptions;
 }
 
 export class PanelConfig {
@@ -45,6 +46,11 @@ export class PanelConfig {
   hostWebUI: boolean = true;
 
   /**
+   * A set of client middlewares to apply to any clients used by the panel.
+   */
+  clientMiddleware: ClientMiddleware = new ClientMiddleware();
+
+  /**
    * Path to the compiled HTML/JS bundle that acts as this application. Added
    * to the project during an external prerelease build step.
    */
@@ -54,7 +60,13 @@ export class PanelConfig {
     if (this.redis) {
       const min = 4;
       const max = 10;
-      return Client.withRedisOptions(this.logger, this.redis.options, this.redis.pool, { min, max });
+      return Client.withRedisOptions(
+        this.logger,
+        this.redis.options,
+        this.clientMiddleware,
+        this.redis.pool || { min, max },
+        { min, max }
+      );
     } else {
       throw new Error("No client configuration found.");
     }

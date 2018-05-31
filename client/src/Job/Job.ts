@@ -34,7 +34,6 @@ export class JobBase {
   static readonly defaultQueue: string;
   static readonly maxRetries: boolean | number;
   static readonly backtrace: boolean | number;
-  static readonly skipDeadJob: boolean;
   static readonly calculateNextRetry: RetryFunctionTimingFunction;
 
   readonly jobId: string;
@@ -55,7 +54,6 @@ export class Job<TDependencies extends IDependencies> extends JobBase {
   static readonly defaultQueue: string = "default";
   static readonly maxRetries: boolean | number = 20;
   static readonly backtrace: boolean | number = 3;
-  static readonly skipDeadJob: boolean = false;
   static readonly calculateNextRetry: RetryFunctionTimingFunction = defaultJobBackoff;
 
   protected readonly deps: TDependencies;

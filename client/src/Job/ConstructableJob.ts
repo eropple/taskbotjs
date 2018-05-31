@@ -12,7 +12,6 @@ export interface ConstructableJobBase {
   defaultQueue: string;
   maxRetries: boolean | number;
   backtrace: boolean | number;
-  skipDeadJob: boolean;
   calculateNextRetry: RetryFunctionTimingFunction;
 }
 

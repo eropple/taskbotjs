@@ -38,7 +38,6 @@ import { Metrics } from "./Metrics";
 import { Heartbeat } from "./Heartbeat";
 import { VERSION, FLAVOR } from "..";
 import { worker } from "cluster";
-import { MiddlewareFunction, Middleware } from "./Middleware";
 
 const chance = new Chance();
 
@@ -136,12 +135,6 @@ export abstract class ServerBase extends EventEmitter {
    */
   abstract registerPoller(plugin: ServerPluginBase, fn: (taskbot: ClientRoot) => Promise<void>, frequency: TimeInterval): void;
 
-  /**
-   * @private
-   * @param fn The middleware function to apply to the server.
-   */
-  abstract registerMiddleware(plugin: ServerPluginBase, fn: MiddlewareFunction): void;
-
   constructor(cp: ClientPool) {
     super();
 
@@ -173,7 +166,6 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
   private plugins: Array<ServerPluginBase> = [];
   private readonly pollers: Array<Poller> = [];
-  private readonly middleware: Middleware = new Middleware();
   private isShuttingDown: boolean = false;
   private intakeLoopTerminated: boolean = false;
   private workerHandleLoopTerminated: boolean = false;
@@ -288,17 +280,6 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     }
 
     this.pollers.push(new Poller(plugin.logger, this, fn, frequency));
-  }
-
-  /**
-   * @private
-   */
-  registerMiddleware(plugin: ServerPluginBase, fn: MiddlewareFunction) {
-    if (this._initialized) {
-      throw new Error("Cannot register middleware after the Server has been initialized.");
-    }
-
-    this.middleware.register(plugin.logger, fn);
   }
 
   private async intakeLoop(): Promise<void> {
@@ -425,21 +406,24 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     for (let worker of doneWorkers) {
       if (!worker.error) {
-        this.emit(this.onJobComplete, worker.descriptor);
 
         this.logger.debug({ jobId: worker.descriptor.id }, "Acking job and placing in done set.");
 
+        const finishedDescriptor = await client.updateJob(worker.descriptor);
         await Promise.all<any>([
-          client.doneSet.add(worker.descriptor),
-          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(worker.descriptor, this.name) : null
+          client.doneSet.add(finishedDescriptor),
+          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(finishedDescriptor, this.name) : null
         ]);
+
+        this.emit(this.onJobComplete, finishedDescriptor);
       } else {
         // Once we've got a failure, we need to:
         // - figure out if we need to retry the job
         // - if so, figure out the next retry time
         // - if not, send it to the dead set if the job is configured for it
-        this.handleErroredJob(worker, client, logger.child({ jobId: worker.descriptor.id }));
-        this.emit(this.onJobError, worker.descriptor, worker.error);
+        const finishedDescriptor = await this.handleErroredJob(worker, client, logger.child({ jobId: worker.descriptor.id }));
+
+        this.emit(this.onJobError, finishedDescriptor, worker.error);
       }
     }
   }
@@ -456,9 +440,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     for (let worker of this.activeWorkers.filter((w) => !w.done)) {
       this.logger.info({ jobId: worker.descriptor.id }, "Requeuing due to worker shutdown.");
+      const finishedDescriptor = await client.updateJob(worker.descriptor);
       await Promise.all<any>([
-        client.queue(worker.descriptor.options.queue).requeue(worker.descriptor),
-        this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(worker.descriptor, this.name) : null
+        client.queue(finishedDescriptor.options.queue).requeue(finishedDescriptor),
+        this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(finishedDescriptor, this.name) : null
       ]);
     }
   }
@@ -490,7 +475,6 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
       newWorker.start(
         this.config.dependencies(this.baseLogger, taskbot),
         this,
-        this.middleware,
         async (jd: JobDescriptor) => this.emit(this.onJobStarting, jd),
         async () => this.clientPool.release(taskbot)
       );
@@ -523,18 +507,17 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         logger.info("Job has no retries left; placing in the dead set.");
       }
 
-      if (descriptor.options.skipDeadJob) {
-        await client.unsafeDeleteJob(descriptor.id);
-      } else {
-        descriptor.status.success = false;
-        delete descriptor.status.nextRetryAt;
+      descriptor.status.success = false;
+      delete descriptor.status.nextRetryAt;
 
-        await Promise.all<any>([
-          client.deadSet.add(descriptor),
-          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(descriptor, this.name) : null
-        ]);
-        this.emit(this.onJobDeath, descriptor);
-      }
+      const finishedDescriptor = await client.updateJob(descriptor);
+      await Promise.all<any>([
+        client.deadSet.add(finishedDescriptor),
+        this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(finishedDescriptor, this.name) : null
+      ]);
+      this.emit(this.onJobDeath, finishedDescriptor);
+
+      return finishedDescriptor;
     } else {
       descriptor.status.retry = (descriptor.status.retry || 0) + 1;
       delete descriptor.status.nextRetryAt;
@@ -550,13 +533,17 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
           endedAt: descriptor.status.endedAt,
           delta
         },
-        `Job has retries remaining; computing next retry and placing in retry set (${delta}s from now).`);
+        `Job has retries remaining; computing next retry and placing in retry set (${delta}s from now).`
+      );
 
-        await Promise.all<any>([
-          client.retrySet.add(descriptor),
-          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(descriptor, this.name) : null
-        ]);
-      this.emit(this.onJobRetryQueued, descriptor);
+      const finishedDescriptor = await client.updateJob(descriptor);
+      await Promise.all<any>([
+        client.retrySet.add(finishedDescriptor),
+        this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(finishedDescriptor, this.name) : null
+      ]);
+      this.emit(this.onJobRetryQueued, finishedDescriptor);
+
+      return finishedDescriptor;
     }
   }
 

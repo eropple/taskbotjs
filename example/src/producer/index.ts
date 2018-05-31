@@ -6,8 +6,12 @@ import Chance from "chance";
 import sleepAsync from "sleep-promise";
 
 import {
-  Client
+  Client,
+  ClientMiddleware
 } from "@taskbotjs/client";
+
+import { exampleClientMiddleware } from "../exampleClientMiddleware";
+
 import { PingJob } from "../jobs/PingJob";
 import { PongJob } from "../jobs/PongJob";
 import { FailJob } from "../jobs/FailJob";
@@ -38,7 +42,10 @@ const logger = Bunyan.createLogger({
   ]
 });
 
-const clientPool = Client.withRedisOptions(logger, { url: "redis://oss.dev.bot:6379", prefix: "ex/" });
+const clientMiddleware = new ClientMiddleware();
+clientMiddleware.register(logger, exampleClientMiddleware);
+
+const clientPool = Client.withRedisOptions(logger, { url: "redis://oss.dev.bot:6379", prefix: "ex/" }, clientMiddleware);
 
 (async () => {
   while (true) {
