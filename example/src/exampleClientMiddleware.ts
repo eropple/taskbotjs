@@ -15,11 +15,11 @@ export const exampleClientMiddleware: ClientMiddlewareFunction =
     switch (phase) {
       case ClientMiddlewarePhase.READ:
         jd.x.writeCount = jd.x.writeCount || 1;
-        logger.info({ jobId: jd.id, jobWriteCount: jd.x.writeCount }, "I'm reading a job!");
+        logger.trace({ jobId: jd.id, jobWriteCount: jd.x.writeCount }, "I'm reading a job!");
       break;
       case ClientMiddlewarePhase.WRITE:
         jd.x.writeCount = (jd.x.writeCount || 0) + 1;
-        logger.info({ jobId: jd.id, jobWriteCount: jd.x.writeCount }, "I'm writing a job!");
+        logger.trace({ jobId: jd.id, jobWriteCount: jd.x.writeCount }, "I'm writing a job!");
       break;
     }
 
