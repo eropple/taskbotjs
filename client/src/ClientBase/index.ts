@@ -70,23 +70,27 @@ export abstract class ClientRoot {
 
   async performAsync(jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
     // TypeScript dsallows default arguments in abstract class methods or interface methods, so...
-    return this.doPerformAsync(jobType, args);
+    return this.performAsyncWithOptions(jobType, optionsFor(jobType), args);
   }
 
   async performAsyncWithOptions(jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
-    return this.doPerformAsync(jobType, args, userOptions);
+    const descriptor = this.buildBaseDescriptor(null, jobType, args, userOptions);
+    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
+    return this.queue(descriptor.options.queue).enqueue(descriptor);
   }
 
   async performAt(date: DateLike, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
-    return this.doPerformAt(date, jobType, args);
+    return this.performAtWithOptions(date, jobType, optionsFor(jobType), args);
   }
 
   async performAtWithOptions(date: DateLike, jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
-    return this.doPerformAt(date, jobType, args, userOptions);
-  }
+    const descriptor = this.buildBaseDescriptor(null, jobType, args, userOptions);
+    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
+    descriptor.orchestration = { scheduledFor: date.valueOf() };
 
-  protected abstract async doPerformAsync(jobType: ConstructableJobBase, args: Array<any>, userOptions?: JobDescriptorOptions): Promise<string>;
-  protected abstract async doPerformAt(date: DateLike, jobType: ConstructableJobBase, args: Array<any>, userOptions?: JobDescriptorOptions): Promise<string>;
+    await this.scheduleSet.add(descriptor);
+    return descriptor.id;
+  }
 
   abstract async incrementCounter(counterName: string): Promise<number>;
   abstract async withCounter<T>(counterName: string, fn: (counter: ICounter) => Promise<T>): Promise<T>;
@@ -113,6 +117,31 @@ export abstract class ClientRoot {
 
   abstract async fetchQueueJob(queues: Array<string>, timeout?: number): Promise<JobDescriptor | null>;
   abstract async acknowledgeQueueJob(jd: JobDescriptor, workerName: string): Promise<void>;
+
+  protected buildBaseDescriptor(
+    idOverride: string | null,
+    jobType: ConstructableJobBase,
+    args: Array<any>,
+    userOptions?: JobDescriptorOptions
+  ): JobDescriptor {
+    const jobName = jobType.jobName;
+    if (!jobName) {
+      throw new Error(`job type '${jobType.name}' requires a specified jobName.`);
+    }
+
+    const id = idOverride || generateJobId();
+    const options = optionsFor(jobType, userOptions);
+
+    return {
+      id,
+      name: jobName,
+      source: `${os.hostname}/${process.pid}`,
+      createdAt: DateTime.utc().valueOf(),
+      args,
+      options,
+      x: {}
+    };
+  }
 }
 
 export abstract class ClientBase<TStorage> extends ClientRoot {
@@ -127,42 +156,5 @@ export abstract class ClientBase<TStorage> extends ClientRoot {
     this.logger = logger;
 
     this.logger.debug("Initializing client.");
-  }
-
-  async doPerformAsync(jobType: ConstructableJobBase, args: Array<any> = [], userOptions?: JobDescriptorOptions): Promise<string> {
-    const descriptor = this.buildBaseDescriptor(jobType, args, userOptions);
-    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
-    return this.queue(descriptor.options.queue).enqueue(descriptor);
-  }
-
-  async doPerformAt(date: DateLike, jobType: ConstructableJobBase, args: Array<any> = [], userOptions?: JobDescriptorOptions): Promise<string> {
-    const descriptor = this.buildBaseDescriptor(jobType, args, userOptions);
-    await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
-    descriptor.orchestration = { scheduledFor: date.valueOf() };
-
-    await this.scheduleSet.add(descriptor);
-    return descriptor.id;
-  }
-
-
-
-  private buildBaseDescriptor(jobType: ConstructableJobBase, args: Array<any>, userOptions?: JobDescriptorOptions): JobDescriptor {
-    const jobName = jobType.jobName;
-    if (!jobName) {
-      throw new Error(`job type '${jobType.name}' requires a specified jobName.`);
-    }
-
-    const id = generateJobId();
-    const options = optionsFor(jobType, userOptions);
-
-    return {
-      id,
-      name: jobName,
-      source: `${os.hostname}/${process.pid}`,
-      createdAt: DateTime.utc().valueOf(),
-      args,
-      options,
-      x: {}
-    };
   }
 }
