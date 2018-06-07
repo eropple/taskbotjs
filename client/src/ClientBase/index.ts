@@ -53,6 +53,31 @@ export function buildClientPool<TStorage, TClient extends ClientBase<TStorage>>(
   return GenericPool.createPool<TClient>(factory, p);
 }
 
+export function buildBaseDescriptor(
+  idOverride: string | null,
+  jobType: ConstructableJobBase,
+  args: Array<any>,
+  userOptions?: JobDescriptorOptions
+): JobDescriptor {
+  const jobName = jobType.jobName;
+  if (!jobName) {
+    throw new Error(`job type '${jobType.name}' requires a specified jobName.`);
+  }
+
+  const id = idOverride || generateJobId();
+  const options = optionsFor(jobType, userOptions);
+
+  return {
+    id,
+    name: jobName,
+    source: `${os.hostname}/${process.pid}`,
+    createdAt: DateTime.utc().valueOf(),
+    args,
+    options,
+    x: {}
+  };
+}
+
 export abstract class ClientRoot {
   protected readonly middleware: ClientMiddleware;
 
@@ -74,7 +99,7 @@ export abstract class ClientRoot {
   }
 
   async performAsyncWithOptions(jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
-    const descriptor = this.buildBaseDescriptor(null, jobType, args, userOptions);
+    const descriptor = buildBaseDescriptor(null, jobType, args, userOptions);
     await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     return this.queue(descriptor.options.queue).enqueue(descriptor);
   }
@@ -84,7 +109,7 @@ export abstract class ClientRoot {
   }
 
   async performAtWithOptions(date: DateLike, jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
-    const descriptor = this.buildBaseDescriptor(null, jobType, args, userOptions);
+    const descriptor = buildBaseDescriptor(null, jobType, args, userOptions);
     await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     descriptor.orchestration = { scheduledFor: date.valueOf() };
 
@@ -117,31 +142,6 @@ export abstract class ClientRoot {
 
   abstract async fetchQueueJob(queues: Array<string>, timeout?: number): Promise<JobDescriptor | null>;
   abstract async acknowledgeQueueJob(jd: JobDescriptor, workerName: string): Promise<void>;
-
-  protected buildBaseDescriptor(
-    idOverride: string | null,
-    jobType: ConstructableJobBase,
-    args: Array<any>,
-    userOptions?: JobDescriptorOptions
-  ): JobDescriptor {
-    const jobName = jobType.jobName;
-    if (!jobName) {
-      throw new Error(`job type '${jobType.name}' requires a specified jobName.`);
-    }
-
-    const id = idOverride || generateJobId();
-    const options = optionsFor(jobType, userOptions);
-
-    return {
-      id,
-      name: jobName,
-      source: `${os.hostname}/${process.pid}`,
-      createdAt: DateTime.utc().valueOf(),
-      args,
-      options,
-      x: {}
-    };
-  }
 }
 
 export abstract class ClientBase<TStorage> extends ClientRoot {
