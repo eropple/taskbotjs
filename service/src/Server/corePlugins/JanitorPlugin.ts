@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 
 import {
   ClientRoot,
-  ICleanableJobSortedSet
+  IJobSortedSet
 } from "@taskbotjs/client";
 
 import { JanitorConfig } from "../../Config/Config";

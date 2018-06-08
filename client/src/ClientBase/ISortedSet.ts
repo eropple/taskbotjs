@@ -15,13 +15,7 @@ export interface ISortedSet<T> {
   find(fn: (item: T) => boolean | Promise<boolean>): Promise<T | null>;
 
   peek(limit: number, offset: number): Promise<Array<T>>;
-}
 
-export interface IJobSortedSet extends ISortedSet<JobDescriptor> {
-
-}
-
-export interface ICleanableJobSortedSet extends IJobSortedSet {
   cleanAllBefore(cutoff: DateTime): Promise<number>;
 
   /**
@@ -36,6 +30,10 @@ export interface ICleanableJobSortedSet extends IJobSortedSet {
   cleanAll(): Promise<number>;
 }
 
+export interface IJobSortedSet extends ISortedSet<JobDescriptor> {
+
+}
+
 export interface IRetries extends IJobSortedSet {
   retry(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
@@ -44,10 +42,10 @@ export interface IScheduled extends IJobSortedSet {
   launch(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
 
-export interface IDead extends ICleanableJobSortedSet {
+export interface IDead extends IJobSortedSet {
   resurrect(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
 
-export interface IDone extends ICleanableJobSortedSet {
+export interface IDone extends IJobSortedSet {
 
 }

@@ -4,7 +4,7 @@ import { DateTime } from "luxon";
 
 import { AsyncRedis } from "../redis";
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
-import { IRetries, IScheduled, IDead, IDone, ICleanableJobSortedSet } from "../ClientBase/ISortedSet";
+import { IRetries, IScheduled, IDead, IDone, IJobSortedSet } from "../ClientBase/ISortedSet";
 import { ScoreSortedSet } from "./ScoreSortedSet";
 import { Client } from ".";
 
@@ -13,7 +13,7 @@ const scheduledScorer = (jd: JobDescriptor) => _.get(jd, ["orchestration", "sche
 const deadScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 const doneScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 
-export class JobSortedSet extends ScoreSortedSet<JobDescriptor> implements ICleanableJobSortedSet {
+export class JobSortedSet extends ScoreSortedSet<JobDescriptor> implements IJobSortedSet {
   constructor(
     baseLogger: Bunyan,
     client: Client,

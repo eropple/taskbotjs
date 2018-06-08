@@ -5,7 +5,7 @@ import { AsyncRedis } from "../redis";
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
 import { generateJobId } from "../Job";
 import { Client } from ".";
-import { ISortedSet, ICleanableJobSortedSet } from "../ClientBase/ISortedSet";
+import { ISortedSet } from "../ClientBase/ISortedSet";
 import { Multi } from "redis";
 import { DateTime } from "luxon";
 import { notEmpty } from "../util/notEmpty";
