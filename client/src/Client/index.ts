@@ -22,7 +22,7 @@ import { optionsFor, generateJobId, Job } from "../Job";
 import { ClientBase, ClientPoolBase, buildClientPool, ClientPool, IRetries, IScheduled, IDead } from "../ClientBase";
 import { keyForQueue, Queue } from "./Queue";
 import { IQueue } from "../ClientBase/IQueue";
-import { RetrySortedSet, ScheduledSortedSet, DeadSortedSet, DoneSortedSet } from "./SortedSets";
+import { RetryJobSortedSet, ScheduledJobSortedSet, DeadJobSortedSet, DoneJobSortedSet } from "./JobSortedSets";
 import { ICounter } from "../ClientBase/ICounter";
 import { Counter } from "./Counter";
 import { WorkerInfo, MetricDayRange, LUXON_YMD, QueueInfo, StorageInfo } from "..";
@@ -36,20 +36,20 @@ const CanonicalJSON = require("canonicaljson");
 export class Client extends ClientBase<AsyncRedis> {
   readonly requiresAcknowledge: boolean = false;
 
-  readonly retrySet: RetrySortedSet;
-  readonly scheduleSet: ScheduledSortedSet;
-  readonly deadSet: DeadSortedSet;
-  readonly doneSet: DoneSortedSet;
+  readonly retrySet: RetryJobSortedSet;
+  readonly scheduleSet: ScheduledJobSortedSet;
+  readonly deadSet: DeadJobSortedSet;
+  readonly doneSet: DoneJobSortedSet;
 
   private readonly queues: { [queueName: string]: Queue } = {};
 
   constructor(logger: Bunyan, asyncRedis: AsyncRedis, middleware?: ClientMiddleware) {
     super(logger, asyncRedis, middleware);
 
-    this.retrySet = new RetrySortedSet(this.logger, this, this.asyncRedis);
-    this.scheduleSet = new ScheduledSortedSet(this.logger, this, this.asyncRedis);
-    this.deadSet = new DeadSortedSet(this.logger, this, this.asyncRedis);
-    this.doneSet = new DoneSortedSet(this.logger, this, this.asyncRedis);
+    this.retrySet = new RetryJobSortedSet(this.logger, this, this.asyncRedis);
+    this.scheduleSet = new ScheduledJobSortedSet(this.logger, this, this.asyncRedis);
+    this.deadSet = new DeadJobSortedSet(this.logger, this, this.asyncRedis);
+    this.doneSet = new DoneJobSortedSet(this.logger, this, this.asyncRedis);
   }
 
   queue(queueName: string): Queue {

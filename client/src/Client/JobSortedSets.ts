@@ -4,8 +4,8 @@ import { DateTime } from "luxon";
 
 import { AsyncRedis } from "../redis";
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
-import { IRetries, IScheduled, IDead, IDone } from "../ClientBase/ISortedSet";
-import { ScoreSortedSet, CleanableScoreSortedSet } from "./ScoreSortedSet";
+import { IRetries, IScheduled, IDead, IDone, ICleanableJobSortedSet } from "../ClientBase/ISortedSet";
+import { ScoreSortedSet } from "./ScoreSortedSet";
 import { Client } from ".";
 
 const retryScorer = (jd: JobDescriptor) => _.get(jd, ["status", "nextRetryAt"], Infinity);
@@ -13,7 +13,63 @@ const scheduledScorer = (jd: JobDescriptor) => _.get(jd, ["orchestration", "sche
 const deadScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 const doneScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 
-export class RetrySortedSet extends ScoreSortedSet implements IRetries {
+export class JobSortedSet extends ScoreSortedSet<JobDescriptor> {
+  constructor(
+    baseLogger: Bunyan,
+    client: Client,
+    asyncRedis: AsyncRedis,
+    name: string,
+    prefix: string,
+    scoreSelector: (jd: JobDescriptor) => number
+  ) {
+    super(
+      baseLogger,
+      client,
+      asyncRedis,
+      name,
+      prefix,
+      "jobs/",
+      (multi, jd) => this.client._multiUpdateJob(multi, jd),
+      async (ids: Array<string>) => _.compact(await this.client.readJobs(ids)),
+      scoreSelector
+    )
+  }
+}
+
+export class CleanableJobSortedSet extends JobSortedSet implements ICleanableJobSortedSet {
+  async cleanAllBefore(cutoff: DateTime): Promise<number> {
+    return this.cleanBetween(0, cutoff.valueOf());
+  }
+
+  async cleanAll(): Promise<number> {
+    // this is awful, but Redis supports it and node-redis doesn't
+    return this.cleanBetween("-inf" as any, "+inf" as any);
+  }
+
+  private async cleanBetween(min: number, max: number): Promise<number> {
+    let runningTotal = 0;
+
+    let jobIds: Array<string> = [];
+
+    do {
+      jobIds = await this.fetchManyIds(min, max);
+
+      const multi = this.asyncRedis.multi();
+
+      for (let jobId of jobIds) {
+        multi.zrem(this.key, jobId);
+        multi.del(`jobs/${jobId}`);
+      }
+
+      const result = await this.asyncRedis.execMulti(multi);
+      runningTotal = runningTotal + (result as Array<string>).map((i) => parseInt(i, 10)).reduce((a, v) => a + v, 0);
+    } while (jobIds && jobIds.length > 0);
+
+    return runningTotal / 2;
+  }
+}
+
+export class RetryJobSortedSet extends JobSortedSet implements IRetries {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
     super(baseLogger, client, asyncRedis, "retry", client.redisPrefix, retryScorer);
   }
@@ -43,7 +99,7 @@ export class RetrySortedSet extends ScoreSortedSet implements IRetries {
   }
 }
 
-export class ScheduledSortedSet extends ScoreSortedSet implements IScheduled {
+export class ScheduledJobSortedSet extends JobSortedSet implements IScheduled {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
     super(baseLogger, client, asyncRedis, "scheduled", client.redisPrefix, scheduledScorer);
   }
@@ -73,7 +129,7 @@ export class ScheduledSortedSet extends ScoreSortedSet implements IScheduled {
   }
 }
 
-export class DeadSortedSet extends CleanableScoreSortedSet implements IDead {
+export class DeadJobSortedSet extends CleanableJobSortedSet implements IDead {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
     super(baseLogger, client, asyncRedis, "dead", client.redisPrefix, deadScorer);
   }
@@ -103,7 +159,7 @@ export class DeadSortedSet extends CleanableScoreSortedSet implements IDead {
   }
 }
 
-export class DoneSortedSet extends CleanableScoreSortedSet implements IDone {
+export class DoneJobSortedSet extends CleanableJobSortedSet implements IDone {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
     super(baseLogger, client, asyncRedis, "done", client.redisPrefix, doneScorer);
   }

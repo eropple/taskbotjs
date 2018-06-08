@@ -1,24 +1,27 @@
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
 import { DateTime } from "luxon";
 
-export interface ISortedSet {
+export interface ISortedSet<T> {
   size(): Promise<number>;
 
-  add(job: JobDescriptor): Promise<number>;
-  remove(jobOrId: JobDescriptorOrId): Promise<boolean>;
-  contains(jobOrId: JobDescriptorOrId): Promise<boolean>;
+  add(item: T): Promise<number>;
+  remove(itemOrId: T | string): Promise<boolean>;
+  contains(itemOrId: T | string): Promise<boolean>;
 
-  fetchAndUse<T>(min: number, max: number, fn: (data: JobDescriptor) => T, orElseFn: () => T): Promise<T | null>
+  fetchAndUse<U>(min: number, max: number, fn: (item: T) => U, orElseFn: () => U): Promise<U | null>
 
-  forEach(fn: (data: JobDescriptor) => any | Promise<any>): Promise<void>;
-  map<T>(fn: (data: JobDescriptor) => T | Promise<T>): Promise<Array<T>>;
-  find(fn: (data: JobDescriptor) => boolean | Promise<boolean>): Promise<JobDescriptor | null>;
+  forEach(fn: (item: T) => any | Promise<any>): Promise<void>;
+  map<U>(fn: (item: T) => U | Promise<U>): Promise<Array<U>>;
+  find(fn: (item: T) => boolean | Promise<boolean>): Promise<T | null>;
 
-  peek(limit: number, offset: number): Promise<Array<JobDescriptor>>;
-  remove(jd: JobDescriptor): Promise<boolean>;
+  peek(limit: number, offset: number): Promise<Array<T>>;
 }
 
-export interface ICleanableSet extends ISortedSet {
+export interface IJobSortedSet extends ISortedSet<JobDescriptor> {
+
+}
+
+export interface ICleanableJobSortedSet extends IJobSortedSet {
   cleanAllBefore(cutoff: DateTime): Promise<number>;
 
   /**
@@ -33,18 +36,18 @@ export interface ICleanableSet extends ISortedSet {
   cleanAll(): Promise<number>;
 }
 
-export interface IRetries extends ISortedSet {
+export interface IRetries extends IJobSortedSet {
   retry(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
 
-export interface IScheduled extends ISortedSet {
+export interface IScheduled extends IJobSortedSet {
   launch(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
 
-export interface IDead extends ICleanableSet {
+export interface IDead extends ICleanableJobSortedSet {
   resurrect(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
 
-export interface IDone extends ICleanableSet {
+export interface IDone extends ICleanableJobSortedSet {
 
 }

@@ -12,7 +12,7 @@ export {
 
 export { keyForQueue, Queue } from "./Client/Queue";
 export { keyForSortedSet, ScoreSortedSet } from "./Client/ScoreSortedSet";
-export { ISortedSet, ICleanableSet } from "./ClientBase/ISortedSet";
+export { ISortedSet, ICleanableJobSortedSet } from "./ClientBase/ISortedSet";
 export { Counter } from "./Client/Counter";
 
 export { Client } from "./Client";

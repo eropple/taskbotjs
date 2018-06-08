@@ -5,7 +5,7 @@ import { AsyncRedis } from "../redis";
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
 import { generateJobId } from "../Job";
 import { Client } from ".";
-import { ISortedSet, ICleanableSet } from "../ClientBase/ISortedSet";
+import { ISortedSet, ICleanableJobSortedSet } from "../ClientBase/ISortedSet";
 import { Multi } from "redis";
 import { DateTime } from "luxon";
 import { notEmpty } from "../util/notEmpty";
@@ -17,6 +17,8 @@ export function keyForSortedSet(name: string): string {
   return `sorted/${name}`;
 }
 
+export type HasId = { id: string };
+
 /**
  * Redis supports a sorted set that internally uses a score to determine its
  * sorting. As an invariant, we're going to:
@@ -26,7 +28,7 @@ export function keyForSortedSet(name: string): string {
  *
  * See stuff like ZADD and other related commands for details.
  */
-export class ScoreSortedSet implements ISortedSet {
+export class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
   // TODO: async iterators would make life a little easier
 
   protected readonly key: string;
@@ -43,7 +45,10 @@ export class ScoreSortedSet implements ISortedSet {
     protected readonly asyncRedis: AsyncRedis,
     readonly name: string,
     readonly prefix: string,
-    private readonly scoreSelector: (jd: JobDescriptor) => number
+    readonly itemPrefix: string,
+    private readonly itemMultiUpdate: (multi: Multi, item: T) => Promise<Multi>,
+    private readonly readMany: (ids: Array<string>) => Promise<Array<T>>,
+    private readonly scoreSelector: (item: T) => number
   ) {
     this.key = keyForSortedSet(name);
     this.logger = baseLogger.child({ sortedSet: name });
@@ -59,12 +64,12 @@ export class ScoreSortedSet implements ISortedSet {
   /**
    * @param jd The entry to add to this set
    */
-  async add(jd: JobDescriptor): Promise<number> {
-    const score = this.scoreSelector(jd);
+  async add(item: T): Promise<number> {
+    const score = this.scoreSelector(item);
 
     const multi = this.asyncRedis.multi();
-    this.client._multiUpdateJob(multi, jd);
-    multi.zadd(this.key, [score, jd.id]);
+    await this.itemMultiUpdate(multi, item);
+    multi.zadd(this.key, [score, item.id]);
 
     await this.asyncRedis.execMulti(multi);
 
@@ -76,23 +81,23 @@ export class ScoreSortedSet implements ISortedSet {
    *
    * @param jd the job to remove
    */
-  async remove(jobOrId: JobDescriptorOrId): Promise<boolean> {
-    const jobId = (typeof jobOrId === "string") ? jobOrId : jobOrId.id;
-    const numRemoved = await this.asyncRedis.zrem(this.key, jobId);
+  async remove(itemOrId: T | string): Promise<boolean> {
+    const id = (typeof itemOrId === "string") ? itemOrId : itemOrId.id;
+    const numRemoved = await this.asyncRedis.zrem(this.key, id);
 
     return numRemoved === 1;
   }
 
-  multiRemove(multi: Multi, jobOrId: JobDescriptorOrId): Multi {
-    const jobId = (typeof jobOrId === "string") ? jobOrId : jobOrId.id;
+  multiRemove(multi: Multi, itemOrId: T | string): Multi {
+    const id = (typeof itemOrId === "string") ? itemOrId : itemOrId.id;
 
-    return multi.zrem(this.key, jobId);
+    return multi.zrem(this.key, id);
   }
 
-  async contains(jobOrId: JobDescriptorOrId): Promise<boolean> {
-    const jobId = (typeof jobOrId === "string") ? jobOrId : jobOrId.id;
+  async contains(itemOrId: T | string): Promise<boolean> {
+    const id = (typeof itemOrId === "string") ? itemOrId : itemOrId.id;
 
-    return !!(await this.asyncRedis.zrank(this.key, jobId));
+    return !!(await this.asyncRedis.zrank(this.key, id));
   }
 
   /**
@@ -104,7 +109,7 @@ export class ScoreSortedSet implements ISortedSet {
    * @param max maximum score
    * @param fn function to apply to the yielded data
    */
-  async fetchAndUse<T>(min: number, max: number, fn: (jd: JobDescriptor) => T, orElseFn: () => T): Promise<T | null> {
+  async fetchAndUse<U>(min: number, max: number, fn: (item: T) => U, orElseFn: () => U): Promise<U | null> {
     const data = await this.fetchOne(min, max);
 
     if (!data) {
@@ -130,15 +135,15 @@ export class ScoreSortedSet implements ISortedSet {
    *
    * @param fn the function to call on each item
    */
-  async forEach(fn: (data: JobDescriptor) => any | Promise<any>): Promise<void> {
+  async forEach(fn: (item: T) => any | Promise<any>): Promise<void> {
     let cursor = 0;
     do {
       const resp: any[] = await (this.asyncRedis as any).zscan(this.key, cursor, "COUNT", 10);
       cursor = parseInt(resp[0], 10);
       const chunks = _.chunk(resp[1] as any[], 2);
 
-      const jobKeys = chunks.map((chunk) => chunk[0]);
-      const items = await this.client.readJobs(jobKeys);
+      const itemKeys = chunks.map((chunk) => chunk[0]);
+      const items = await this.readMany(itemKeys);
 
       for (let item of items) {
         if (!item) {
@@ -156,8 +161,8 @@ export class ScoreSortedSet implements ISortedSet {
    *
    * @param fn the mapping function to apply
    */
-  async map<T>(fn: (data: JobDescriptor) => T | Promise<T>): Promise<Array<T>> {
-    const ret: Array<T> = [];
+  async map<U>(fn: (item: T) => U | Promise<U>): Promise<Array<U>> {
+    const ret: Array<U> = [];
 
     let cursor = 0;
     do {
@@ -165,8 +170,8 @@ export class ScoreSortedSet implements ISortedSet {
       cursor = parseInt(resp[0], 10);
       const chunks = _.chunk(resp[1] as any[], 2);
 
-      const jobKeys = chunks.map((chunk) => chunk[0]);
-      const items = await this.client.readJobs(jobKeys);
+      const itemKeys = chunks.map((chunk) => chunk[0]);
+      const items = await this.readMany(itemKeys);
 
       for (let item of items) {
         if (!item) {
@@ -186,15 +191,15 @@ export class ScoreSortedSet implements ISortedSet {
    *
    * @param fn predicate function
    */
-  async find(fn: (data: JobDescriptor) => boolean | Promise<boolean>): Promise<JobDescriptor | null> {
+  async find(fn: (item: T) => boolean | Promise<boolean>): Promise<T | null> {
     let cursor = 0;
     do {
       const resp: any[] = await (this.asyncRedis as any).zscan(this.key, cursor, "COUNT", 10);
       cursor = parseInt(resp[0], 10);
       const chunks = _.chunk(resp[1] as any[], 2);
 
-      const jobKeys = chunks.map((chunk) => chunk[0]);
-      const items = await this.client.readJobs(jobKeys);
+      const itemKeys = chunks.map((chunk) => chunk[0]);
+      const items = await this.readMany(itemKeys);
 
       for (let item of items) {
         if (!item) {
@@ -216,9 +221,9 @@ export class ScoreSortedSet implements ISortedSet {
    * @param limit return no more than this number of items
    * @param offset offset from the front of the sorted set
    */
-  async peek(limit: number, offset: number): Promise<Array<JobDescriptor>> {
-    const jobKeys = await this.asyncRedis.zrange(this.key, offset, offset + limit);
-    return (await this.client.readJobs(jobKeys)).filter(notEmpty);
+  async peek(limit: number, offset: number): Promise<Array<T>> {
+    const itemKeys = await this.asyncRedis.zrange(this.key, offset, offset + limit);
+    return (await this.readMany(itemKeys)).filter(notEmpty);
   }
 
   protected async scanIdBatches(fn: (jobIds: Array<string>) => any): Promise<void> {
@@ -233,7 +238,7 @@ export class ScoreSortedSet implements ISortedSet {
     } while (cursor !== 0);
   }
 
-  protected async fetchOne(min: number, max: number): Promise<JobDescriptor | null> {
+  protected async fetchOne(min: number, max: number): Promise<T | null> {
     const ret = await this.asyncRedis.zrangebyscore(this.key, min, max, "limit" as any, [0, 1]);
     if (!ret || ret.length === 0) {
       return null;
@@ -247,43 +252,10 @@ export class ScoreSortedSet implements ISortedSet {
       return null;
     }
 
-    return CanonicalJSON.parse(await this.asyncRedis.get(`jobs/${jobId}`)) as JobDescriptor;
+    return CanonicalJSON.parse(await this.asyncRedis.get(`${this.itemPrefix}${jobId}`)) as T;
   }
 
   protected async fetchManyIds(min: number, max: number): Promise<Array<string>> {
     return this.asyncRedis.zrangebyscore(this.key, min, max, "limit" as any, [0, 10]);
-  }
-}
-
-export class CleanableScoreSortedSet extends ScoreSortedSet implements ICleanableSet {
-  async cleanAllBefore(cutoff: DateTime): Promise<number> {
-    return this.cleanBetween(0, cutoff.valueOf());
-  }
-
-  async cleanAll(): Promise<number> {
-    // this is awful, but Redis supports it and node-redis doesn't
-    return this.cleanBetween("-inf" as any, "+inf" as any);
-  }
-
-  private async cleanBetween(min: number, max: number): Promise<number> {
-    let runningTotal = 0;
-
-    let jobIds: Array<string> = [];
-
-    do {
-      jobIds = await this.fetchManyIds(min, max);
-
-      const multi = this.asyncRedis.multi();
-
-      for (let jobId of jobIds) {
-        multi.zrem(this.key, jobId);
-        multi.del(`jobs/${jobId}`);
-      }
-
-      const result = await this.asyncRedis.execMulti(multi);
-      runningTotal = runningTotal + (result as Array<string>).map((i) => parseInt(i, 10)).reduce((a, v) => a + v, 0);
-    } while (jobIds && jobIds.length > 0);
-
-    return runningTotal / 2;
   }
 }
