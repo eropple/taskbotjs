@@ -28,7 +28,7 @@ export type HasId = { id: string };
  *
  * See stuff like ZADD and other related commands for details.
  */
-export class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
+export abstract class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
   // TODO: async iterators would make life a little easier
 
   protected readonly key: string;
@@ -258,4 +258,15 @@ export class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
   protected async fetchManyIds(min: number, max: number): Promise<Array<string>> {
     return this.asyncRedis.zrangebyscore(this.key, min, max, "limit" as any, [0, 10]);
   }
+
+  async cleanAllBefore(cutoff: DateTime): Promise<number> {
+    return this.cleanBetween(0, cutoff.valueOf());
+  }
+
+  async cleanAll(): Promise<number> {
+    // this is awful, but Redis supports it and node-redis doesn't
+    return this.cleanBetween("-inf" as any, "+inf" as any);
+  }
+
+  protected abstract async cleanBetween(min: number, max: number): Promise<number>;
 }

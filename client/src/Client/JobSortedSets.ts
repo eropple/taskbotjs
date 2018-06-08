@@ -13,7 +13,7 @@ const scheduledScorer = (jd: JobDescriptor) => _.get(jd, ["orchestration", "sche
 const deadScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 const doneScorer = (jd: JobDescriptor) => _.get(jd, ["status", "endedAt"], Infinity);
 
-export class JobSortedSet extends ScoreSortedSet<JobDescriptor> {
+export class JobSortedSet extends ScoreSortedSet<JobDescriptor> implements ICleanableJobSortedSet {
   constructor(
     baseLogger: Bunyan,
     client: Client,
@@ -34,19 +34,8 @@ export class JobSortedSet extends ScoreSortedSet<JobDescriptor> {
       scoreSelector
     )
   }
-}
 
-export class CleanableJobSortedSet extends JobSortedSet implements ICleanableJobSortedSet {
-  async cleanAllBefore(cutoff: DateTime): Promise<number> {
-    return this.cleanBetween(0, cutoff.valueOf());
-  }
-
-  async cleanAll(): Promise<number> {
-    // this is awful, but Redis supports it and node-redis doesn't
-    return this.cleanBetween("-inf" as any, "+inf" as any);
-  }
-
-  private async cleanBetween(min: number, max: number): Promise<number> {
+  protected async cleanBetween(min: number, max: number): Promise<number> {
     let runningTotal = 0;
 
     let jobIds: Array<string> = [];
@@ -129,7 +118,7 @@ export class ScheduledJobSortedSet extends JobSortedSet implements IScheduled {
   }
 }
 
-export class DeadJobSortedSet extends CleanableJobSortedSet implements IDead {
+export class DeadJobSortedSet extends JobSortedSet implements IDead {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
     super(baseLogger, client, asyncRedis, "dead", client.redisPrefix, deadScorer);
   }
@@ -159,7 +148,7 @@ export class DeadJobSortedSet extends CleanableJobSortedSet implements IDead {
   }
 }
 
-export class DoneJobSortedSet extends CleanableJobSortedSet implements IDone {
+export class DoneJobSortedSet extends JobSortedSet implements IDone {
   constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
     super(baseLogger, client, asyncRedis, "done", client.redisPrefix, doneScorer);
   }
