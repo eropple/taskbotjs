@@ -184,6 +184,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     this.logger.info({ version: VERSION, flavor: FLAVOR }, "Instantiating server.");
 
     this.intake = buildIntake(this.config, this, this.logger);
+    this.logConfigs();
   }
 
   get activeWorkerCount() { return this.activeWorkers.length; }
@@ -314,6 +315,16 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     });
 
     this.intakeLoopTerminated = true;
+  }
+
+  private logConfigs(): void {
+    for (const pair of _.toPairs(this.config.jobMap)) {
+      const jobName = pair[0];
+      const jobClass = pair[1];
+      const jobClassName = jobClass.name;
+
+      this.logger.info({ jobName, jobClass: jobClass.name }, `'${jobName}' => ${jobClassName}`);
+    }
   }
 
   /**
@@ -502,7 +513,7 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
     if (dead) {
       if (!worker.jobCtor) {
-        logger.error({ jobName: descriptor.name }, "No worker bound for this job; placing in the dead set.");
+        logger.error({ jobName: descriptor.name }, "No job class bound for job name; placing in the dead set.");
       } else {
         logger.info("Job has no retries left; placing in the dead set.");
       }

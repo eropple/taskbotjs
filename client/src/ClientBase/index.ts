@@ -55,13 +55,13 @@ export function buildClientPool<TStorage, TClient extends ClientBase<TStorage>>(
 
 export function buildBaseDescriptor(
   idOverride: string | null,
-  jobType: ConstructableJobBase,
+  jobType: ConstructableJobBase | string,
   args: Array<any>,
   userOptions?: JobDescriptorOptions
 ): JobDescriptor {
-  const jobName = jobType.jobName;
+  const jobName = typeof(jobType) === "string" ? jobType : jobType.jobName;
   if (!jobName) {
-    throw new Error(`job type '${jobType.name}' requires a specified jobName.`);
+    throw new Error("Job passed to buildBaseDescriptor has no jobName.");
   }
 
   const id = idOverride || generateJobId();
@@ -98,7 +98,7 @@ export abstract class ClientRoot {
     return this.performAsyncWithOptions(jobType, optionsFor(jobType), args);
   }
 
-  async performAsyncWithOptions(jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
+  async performAsyncWithOptions(jobType: ConstructableJobBase | string, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
     const descriptor = buildBaseDescriptor(null, jobType, args, userOptions);
     await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     return this.queue(descriptor.options.queue).enqueue(descriptor);
@@ -108,7 +108,7 @@ export abstract class ClientRoot {
     return this.performAtWithOptions(date, jobType, optionsFor(jobType), args);
   }
 
-  async performAtWithOptions(date: DateLike, jobType: ConstructableJobBase, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
+  async performAtWithOptions(date: DateLike, jobType: ConstructableJobBase | string, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
     const descriptor = buildBaseDescriptor(null, jobType, args, userOptions);
     await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     descriptor.orchestration = { scheduledFor: date.valueOf() };
