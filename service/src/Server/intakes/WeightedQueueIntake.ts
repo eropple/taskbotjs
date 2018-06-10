@@ -61,7 +61,7 @@ export class WeightedJobIntake extends Intake<WeightedQueueIntakeConfig> {
       this.logger.debug({ jobId: job.id }, "Job fetched.");
       return job;
     } else {
-      this.logger.debug("No jobs found during intake.");
+      this.logger.trace("No jobs found during intake.");
       return null;
     }
   }
