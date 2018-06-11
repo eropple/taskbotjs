@@ -65,15 +65,18 @@ export abstract class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
    * @param jd The entry to add to this set
    */
   async add(item: T): Promise<number> {
-    const score = this.scoreSelector(item);
-
     const multi = this.asyncRedis.multi();
     await this.itemMultiUpdate(multi, item);
-    multi.zadd(this.key, [score, item.id]);
+    const ret = this.multiAdd(multi, item);
 
     await this.asyncRedis.execMulti(multi);
 
-    return score;
+    return ret[0];
+  }
+
+  multiAdd(multi: Multi, item: T): [number, Multi] {
+    const score = this.scoreSelector(item);
+    return [score, multi.zadd(this.key, [score, item.id])];
   }
 
   /**
