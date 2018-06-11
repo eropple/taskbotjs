@@ -38,7 +38,7 @@ export class Poller {
     this.executing = true;
 
     try {
-      this.logger.debug("Entering poll iteration.");
+      this.logger.trace("Entering poll iteration.");
       await this.server.clientPool.use(async (taskbot) => this.fn(taskbot));
     } catch (err) {
       this.logger.error(err);
