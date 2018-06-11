@@ -57,7 +57,7 @@ export function buildBaseDescriptor(
   idOverride: string | null,
   jobType: ConstructableJobBase | string,
   args: Array<any>,
-  userOptions?: JobDescriptorOptions
+  userOptions?: Partial<JobDescriptorOptions>
 ): JobDescriptor {
   const jobName = typeof(jobType) === "string" ? jobType : jobType.jobName;
   if (!jobName) {
@@ -98,7 +98,11 @@ export abstract class ClientRoot {
     return this.performAsyncWithOptions(jobType, optionsFor(jobType), args);
   }
 
-  async performAsyncWithOptions(jobType: ConstructableJobBase | string, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
+  async performAsyncWithOptions(
+    jobType: ConstructableJobBase | string,
+    userOptions: Partial<JobDescriptorOptions>,
+    ...args: any[]
+  ): Promise<string> {
     const descriptor = buildBaseDescriptor(null, jobType, args, userOptions);
     await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     return this.queue(descriptor.options.queue).enqueue(descriptor);
@@ -108,7 +112,12 @@ export abstract class ClientRoot {
     return this.performAtWithOptions(date, jobType, optionsFor(jobType), args);
   }
 
-  async performAtWithOptions(date: DateLike, jobType: ConstructableJobBase | string, userOptions: JobDescriptorOptions, ...args: any[]): Promise<string> {
+  async performAtWithOptions(
+    date: DateLike,
+    jobType: ConstructableJobBase | string,
+    userOptions: Partial<JobDescriptorOptions>,
+    ...args: any[]
+  ): Promise<string> {
     const descriptor = buildBaseDescriptor(null, jobType, args, userOptions);
     await this.middleware.resolve(ClientMiddlewarePhase.WRITE, descriptor, this);
     descriptor.orchestration = { scheduledFor: date.valueOf() };
