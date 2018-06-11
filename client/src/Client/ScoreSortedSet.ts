@@ -268,5 +268,25 @@ export abstract class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
     return this.cleanBetween("-inf" as any, "+inf" as any);
   }
 
-  protected abstract async cleanBetween(min: number, max: number): Promise<number>;
+  async cleanBetween(min: number, max: number): Promise<number> {
+    let runningTotal = 0;
+
+    let itemIds: Array<string> = [];
+
+    do {
+      itemIds = await this.fetchManyIds(min, max);
+
+      const multi = this.asyncRedis.multi();
+
+      for (let itemId of itemIds) {
+        multi.zrem(this.key, itemId);
+        multi.del(`${this.itemPrefix}${itemId}`);
+      }
+
+      const result = await this.asyncRedis.execMulti(multi);
+      runningTotal = runningTotal + (result as Array<string>).map((i) => parseInt(i, 10)).reduce((a, v) => a + v, 0);
+    } while (itemIds && itemIds.length > 0);
+
+    return runningTotal / 2;
+  }
 }

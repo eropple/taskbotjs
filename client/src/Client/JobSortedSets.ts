@@ -34,28 +34,6 @@ export class JobSortedSet extends ScoreSortedSet<JobDescriptor> implements IJobS
       scoreSelector
     )
   }
-
-  protected async cleanBetween(min: number, max: number): Promise<number> {
-    let runningTotal = 0;
-
-    let jobIds: Array<string> = [];
-
-    do {
-      jobIds = await this.fetchManyIds(min, max);
-
-      const multi = this.asyncRedis.multi();
-
-      for (let jobId of jobIds) {
-        multi.zrem(this.key, jobId);
-        multi.del(`jobs/${jobId}`);
-      }
-
-      const result = await this.asyncRedis.execMulti(multi);
-      runningTotal = runningTotal + (result as Array<string>).map((i) => parseInt(i, 10)).reduce((a, v) => a + v, 0);
-    } while (jobIds && jobIds.length > 0);
-
-    return runningTotal / 2;
-  }
 }
 
 export class RetryJobSortedSet extends JobSortedSet implements IRetries {
