@@ -2,6 +2,8 @@ import * as _ from "lodash";
 import Bunyan from "bunyan";
 import { DateTime } from "luxon";
 
+import { Multi } from "redis";
+
 import { AsyncRedis } from "../redis";
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
 import { IRetries, IScheduled, IDead, IDone, IJobSortedSet } from "../ClientBase/ISortedSet";
@@ -56,6 +58,10 @@ export class JobSortedSet extends ScoreSortedSet<JobDescriptor> implements IJobS
     } while (cursor !== 0)
 
     return ret;
+  }
+
+  protected multiDelete(multi: Multi, itemId: string): Multi {
+    return multi.zrem(this.key, itemId).del(`${this.itemPrefix}${itemId}`);
   }
 }
 

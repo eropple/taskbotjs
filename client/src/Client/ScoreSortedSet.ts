@@ -282,8 +282,7 @@ export abstract class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
       const multi = this.asyncRedis.multi();
 
       for (let itemId of itemIds) {
-        multi.zrem(this.key, itemId);
-        multi.del(`${this.itemPrefix}${itemId}`);
+        this.multiDelete(multi, itemId);
       }
 
       const result = await this.asyncRedis.execMulti(multi);
@@ -292,4 +291,6 @@ export abstract class ScoreSortedSet<T extends HasId> implements ISortedSet<T> {
 
     return runningTotal / 2;
   }
+
+  protected abstract multiDelete(multi: Multi, itemId: string): Multi;
 }
