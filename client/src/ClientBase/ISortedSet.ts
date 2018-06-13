@@ -31,7 +31,7 @@ export interface ISortedSet<T> {
 }
 
 export interface IJobSortedSet extends ISortedSet<JobDescriptor> {
-
+  mapKeys<U>(fn: (raw: string) => U | Promise<U>): Promise<Array<U>>;
 }
 
 export interface IRetries extends IJobSortedSet {

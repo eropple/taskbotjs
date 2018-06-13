@@ -34,6 +34,29 @@ export class JobSortedSet extends ScoreSortedSet<JobDescriptor> implements IJobS
       scoreSelector
     )
   }
+
+  async mapKeys<U>(fn: (raw: string) => U | Promise<U>): Promise<Array<U>> {
+    const ret: Array<U> = [];
+
+    let cursor = 0;
+    do {
+      const resp: any[] = await (this.asyncRedis as any).zscan(this.key, cursor, "COUNT", 10);
+      cursor = parseInt(resp[0], 10);
+      const chunks = _.chunk(resp[1] as any[], 2);
+
+      const itemKeys = chunks.map((chunk) => chunk[0]);
+
+      for (let itemkey of itemKeys) {
+        if (!itemkey) {
+          return ret;
+        }
+
+        ret.push(await fn(itemkey));
+      }
+    } while (cursor !== 0)
+
+    return ret;
+  }
 }
 
 export class RetryJobSortedSet extends JobSortedSet implements IRetries {
