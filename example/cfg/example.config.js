@@ -22,7 +22,7 @@ const { exampleClientMiddleware } = require("../dist/exampleClientMiddleware");
 const config = new Config();
 config.redis = {
   options: {
-    url: "redis://oss.dev.bot:6379",
+    url: "redis://localhost:18377",
     prefix: "ex/"
   }
 };

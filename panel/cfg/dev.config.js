@@ -12,7 +12,7 @@ const { PanelConfig } = require("../dist");
 const config = new PanelConfig();
 config.redis = {
   options: {
-    url: "redis://oss.dev.bot:6379",
+    url: "redis://localhost:18377",
     prefix: "ex/"
   }
 };

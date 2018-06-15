@@ -45,7 +45,7 @@ const logger = Bunyan.createLogger({
 const clientMiddleware = new ClientMiddleware();
 clientMiddleware.register(logger, exampleClientMiddleware);
 
-const clientPool = Client.withRedisOptions(logger, { url: "redis://oss.dev.bot:6379", prefix: "ex/" }, clientMiddleware);
+const clientPool = Client.withRedisOptions(logger, { url: "redis://localhost:18377", prefix: "ex/" }, clientMiddleware);
 
 (async () => {
   while (true) {

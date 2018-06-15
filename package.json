@@ -6,7 +6,10 @@
     "test": "oao run-script test",
     "build": "oao run-script build --parallel",
     "watch": "oao run-script watch --parallel",
-    "clean": "oao run-script clean --parallel"
+    "clean": "oao run-script clean --parallel",
+    "redis-up": "docker-compose up --detach --remove-orphans",
+    "redis-cli": "redis-cli -u redis://localhost:18377",
+    "redis-down": "docker-compose down"
   },
   "devDependencies": {
     "oao": "^1.2.1",
