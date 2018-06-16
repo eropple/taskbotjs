@@ -65,6 +65,7 @@ export class Worker<TDependencies extends IDependencies> {
       const job = new this._jobCtor(deps, descriptor);
       await job.perform.apply(job, this.descriptor.args);
 
+      descriptor.status!.success = true;
       logger.debug("Job completed successfully.");
     } catch (err) {
       logger.error(err, "Error in job execution.");
