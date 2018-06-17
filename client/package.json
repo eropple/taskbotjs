@@ -5,7 +5,9 @@
   "license": "LGPL-3.0-only",
   "main": "dist",
   "repository": "github:eropple/taskbotjs",
-  "files": ["*"],
+  "files": [
+    "*"
+  ],
   "scripts": {
     "test": "tslint --project . && jest",
     "build": "tsc",
@@ -17,6 +19,7 @@
   "dependencies": {
     "canonicaljson": "1.0.1",
     "chance": "1.0.16",
+    "change-case": "3.0.2",
     "class-transformer": "0.1.9",
     "commander": "2.15.1",
     "diceware-generator": "3.0.1",

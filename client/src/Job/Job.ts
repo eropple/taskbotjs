@@ -10,7 +10,6 @@ import { JobDescriptorOptions } from "../JobMetadata";
 import { RetryFunctionTimingFunction, defaultJobBackoff } from "./backoff";
 
 const chance = new Chance();
-const niceware = require("niceware");
 
 const dwGen = require("diceware-generator");
 const enEFF = require("diceware-wordlist-en-eff");

@@ -15,6 +15,7 @@
     "@types/async-lock": "1.1.0",
     "@types/bunyan": "1.8.4",
     "@types/chance": "1.0.0",
+    "@types/change-case": "2.3.1",
     "@types/cors": "2.8.4",
     "@types/deep-freeze": "0.1.1",
     "@types/express": "4.16.0",

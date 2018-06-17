@@ -12,7 +12,7 @@ const { PanelConfig } = require("../dist");
 const config = new PanelConfig();
 config.redis = {
   options: {
-    url: "redis://localhost:18377",
+    url: process.env.TASKBOT_REDIS_URL || "redis://localhost:18377",
     prefix: "ex/"
   }
 };
