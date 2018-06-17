@@ -12,9 +12,22 @@
     "redis-down": "docker-compose down"
   },
   "devDependencies": {
-    "oao": "^1.2.1",
-    "pryjs": "^1.0.3",
-    "typedoc": "^0.11.1"
+    "@types/async-lock": "1.1.0",
+    "@types/bunyan": "1.8.4",
+    "@types/chance": "1.0.0",
+    "@types/cors": "2.8.4",
+    "@types/deep-freeze": "0.1.1",
+    "@types/express": "4.16.0",
+    "@types/fs-extra": "5.0.2",
+    "@types/fs-extra-promise": "1.0.4",
+    "@types/generic-pool": "3.1.2",
+    "@types/jest": "23.1.0",
+    "@types/lodash": "4.14.109",
+    "@types/luxon": "0.5.3",
+    "@types/node": "8.10.20",
+    "oao": "1.2.1",
+    "pryjs": "1.0.3",
+    "typedoc": "0.11.1"
   },
   "workspaces": [
     "service",
