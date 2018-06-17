@@ -8,6 +8,7 @@
     "taskbot.js": "./bin/taskbot.js"
   },
   "repository": "github:eropple/taskbotjs",
+  "files": ["*"],
   "scripts": {
     "test": "tslint --project . && jest",
     "build": "tsc",

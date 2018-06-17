@@ -9,3 +9,5 @@ tmp
 *.tgz
 
 .vagrant
+
+packaging/_artifacts

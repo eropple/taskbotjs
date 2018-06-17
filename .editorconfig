@@ -1,6 +1,6 @@
 root = true
 
-[{*.rb,*.ru,console,Vagrantfile,Gemfile,Rakefile,*.js,*.jsx,*.ts,*.tsx,*.json,.babelrc,*.html,*.md}]
+[{*.rb,*.ru,console,Vagrantfile,Gemfile,Rakefile,*.js,*.jsx,*.ts,*.tsx,*.json,.babelrc,*.html,*.md,*.bash}]
 indent_size = 2
 trim_trailing_whitespace = true
 indent_style = space

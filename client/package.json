@@ -5,6 +5,7 @@
   "license": "LGPL-3.0-only",
   "main": "dist",
   "repository": "github:eropple/taskbotjs",
+  "files": ["*"],
   "scripts": {
     "test": "tslint --project . && jest",
     "build": "tsc",
