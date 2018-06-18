@@ -3,6 +3,9 @@
   "name": "@taskbotjs/client",
   "version": "0.1.0-wip",
   "license": "LGPL-3.0-only",
+  "engines": {
+    "node": ">= 8.10.0"
+  },
   "main": "dist",
   "repository": "github:eropple/taskbotjs",
   "files": [

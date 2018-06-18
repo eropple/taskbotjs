@@ -3,6 +3,9 @@
   "name": "@taskbotjs/example",
   "version": "0.1.0-wip",
   "license": "MIT",
+  "engines": {
+    "node": ">= 8.10.0"
+  },
   "main": "dist",
   "repository": "github:eropple/taskbotjs",
   "files": ["*"],
