@@ -22,6 +22,7 @@
     "@taskbotjs/client": "0.1.0-wip",
     "@taskbotjs/webapi": "0.1.0-wip",
     "bunyan": "1.8.12",
+    "bunyan-prettystream-circularsafe": "^0.3.1",
     "commander": "2.15.1",
     "cors": "2.8.4",
     "express": "4.16.3",

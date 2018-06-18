@@ -17,5 +17,6 @@ yarn install
 
 for package in client service webapi panel example; do
   cd "$ROOT/$package"
+  yarn build
   yarn pack -f "$ARTIFACT_DIR/$package.tgz"
 done

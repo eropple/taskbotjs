@@ -6,8 +6,6 @@ import program from "commander";
 import { Config } from "../Config";
 import { Server } from "../Server";
 
-require("ts-node").register({});
-
 const packageJson = fs.readJsonSync(`${__dirname}/../../package.json`);
 
 export async function start(args: string[]): Promise<void> {

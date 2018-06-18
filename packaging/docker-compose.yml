@@ -15,6 +15,37 @@ services:
       - target: 6379
         published: 19981
         protocol: tcp
-  producer:
+  panel:
     image: taskbotjs
-
+    depends_on:
+      - redis
+    ports:
+      - target: 14008
+        published: 19982
+        protocol: tcp
+    command: "bash -c 'cd /usr/local/lib/node_modules/@taskbotjs/panel && taskbot-panel.js -c cfg/example.config.js'"
+  producer00:
+    image: taskbotjs
+    depends_on:
+      - redis
+    command: "bash -c 'cd /usr/local/lib/node_modules/@taskbotjs/example && yarn producer'"
+  producer01:
+    image: taskbotjs
+    depends_on:
+      - redis
+    command: "bash -c 'cd /usr/local/lib/node_modules/@taskbotjs/example && yarn producer'"
+  consumer00:
+    image: taskbotjs
+    depends_on:
+      - redis
+    command: "bash -c 'cd /usr/local/lib/node_modules/@taskbotjs/example && ../service/bin/taskbot.js --config-file cfg/example.config.js'"
+  consumer01:
+    image: taskbotjs
+    depends_on:
+      - redis
+    command: "bash -c 'cd /usr/local/lib/node_modules/@taskbotjs/example && ../service/bin/taskbot.js --config-file cfg/example.config.js'"
+  consumer02:
+    image: taskbotjs
+    depends_on:
+      - redis
+    command: "bash -c 'cd /usr/local/lib/node_modules/@taskbotjs/example && ../service/bin/taskbot.js --config-file cfg/example.config.js'"

@@ -1,12 +1,21 @@
 FROM node:8
 ENV NODE_ENV production
 ENV TASKBOT_REDIS_URL redis://redis:6379
+ENV TASKBOT_PANEL_EXTERNAL_HTTP http://localhost:19982
 
 # Uploading all artifacts
 RUN mkdir /artifacts
 COPY _artifacts/* /artifacts/
 
-# Linking each artifact to get around Yarn dependency management
+# Don't be scared; this is more complicated/stupid than an actual deploy is
+# going to have to be. I've written this before putting these artifacts on NPM,
+# and so both NPM and Yarn _hate me_ for it. Yarn, even when things are `yarn
+# link`ed, checks the registry and gets mad at you for not having published the
+# package yet. NPM's issues are not dissimilar. So this gets around it by using
+# npm link to satisfy the package dependencies exactly so far as to copy a full
+# version of the artifact into the global node_modules.
+#
+# You should have a much easier time of it than I did.
 WORKDIR /artifacts
 RUN tar xzf client.tgz
 RUN mv package client

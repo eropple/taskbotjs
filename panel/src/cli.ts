@@ -7,7 +7,7 @@ import program from "commander";
 import { PanelConfig } from "./PanelConfig";
 import { runServer } from "./PanelServer";
 
-const packageJson = fs.readJsonSync(`${__dirname}/../../package.json`);
+const packageJson = fs.readJsonSync(`${__dirname}/../package.json`);
 
 export function start(args: string[]) {
   program
