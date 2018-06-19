@@ -1,0 +1,8 @@
+{
+  "name": "@taskbotjs-meta/packaging",
+  "private": true,
+  "dependencies": {
+    "axios": "^0.18.0",
+    "sleep-promise": "^8.0.1"
+  }
+}

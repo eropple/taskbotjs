@@ -46,6 +46,15 @@ export class Client extends ClientBase<AsyncRedis> {
   constructor(logger: Bunyan, asyncRedis: AsyncRedis, middleware?: ClientMiddleware) {
     super(logger, asyncRedis, middleware);
 
+    // mildly gross, but the node-redis typescript definitions hide this and we need 'em.
+    let options = (asyncRedis.redis as any).options;
+    if (options.password) {
+      options = _.cloneDeep(options);
+      options.password = "*";
+    }
+
+    this.logger.debug("Connecting to Redis.", options);
+
     this.retrySet = new RetryJobSortedSet(this.logger, this, this.asyncRedis);
     this.scheduleSet = new ScheduledJobSortedSet(this.logger, this, this.asyncRedis);
     this.deadSet = new DeadJobSortedSet(this.logger, this, this.asyncRedis);

@@ -24,14 +24,14 @@ export class PanelConfig {
   /**
    * The HTTP port to listen on.
    */
-  port: number = 14008;
+  port: number = parseInt(process.env.TASKBOT_PANEL_PORT || "14008", 10);
 
   /**
    * The externally-accessible host for this service. For example, if the
    * service is behind a load balancer, you'd want to set these values to
    * whatever host/port/virtual domain would route to the service.
    */
-  externalHttpBase: string = "http://localhost:14008";
+  externalHttpBase: string = process.env.TASKBOT_PANEL_EXTERNAL_HTTP || "http://localhost:14008";
 
   /**
    * Options for the Redis client powering the client connector.

@@ -6,5 +6,8 @@ coverage
 cache
 tmp
 *.log
+*.tgz
 
 .vagrant
+
+packaging/_artifacts
