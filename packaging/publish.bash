@@ -4,7 +4,7 @@ RET=0
 BUILD_ROOT=$(dirname $0)
 cd $BUILD_ROOT
 
-for f in $(ls b???-*.{js,bash}); do
+for f in $(ls p???-*.{js,bash}); do
   ./${f}
   SCRIPT_CODE=$?
   if [[ $SCRIPT_CODE -ne 0 ]]; then
@@ -15,9 +15,5 @@ for f in $(ls b???-*.{js,bash}); do
     break
   fi
 done
-
-if [[ $NO_CLEANUP -ne 1 ]]; then
-  ./build-cleanup.bash
-fi
 
 exit $RET
