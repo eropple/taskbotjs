@@ -1,15 +1,22 @@
 {
   "private": true,
   "name": "@taskbotjs/workspace",
-  "version": "0.1.0",
+  "version": "0.1.0-wip",
+  "workspaces": [
+    "service",
+    "client",
+    "example",
+    "webapi",
+    "panel"
+  ],
   "scripts": {
-    "test": "oao run-script test",
     "build": "oao run-script build --parallel",
-    "watch": "oao run-script watch --parallel",
     "clean": "oao run-script clean --parallel",
-    "redis-up": "docker-compose up -d --remove-orphans",
     "redis-cli": "redis-cli -u redis://localhost:18377",
-    "redis-down": "docker-compose down"
+    "redis-down": "docker-compose down",
+    "redis-up": "docker-compose up -d --remove-orphans",
+    "test": "oao run-script test",
+    "watch": "oao run-script watch --parallel"
   },
   "devDependencies": {
     "@types/async-lock": "1.1.0",
@@ -30,11 +37,7 @@
     "pryjs": "1.0.3",
     "typedoc": "0.11.1"
   },
-  "workspaces": [
-    "service",
-    "client",
-    "example",
-    "webapi",
-    "panel"
+  "workspacesAdjacent": [
+    "webui"
   ]
 }

@@ -1,21 +1,20 @@
 {
   "private": true,
   "name": "@taskbotjs/webapi",
-  "version": "0.1.0-wip",
   "license": "LGPL-3.0-only",
-  "engines": {
-    "node": ">= 8.10.0"
-  },
-  "main": "dist",
   "repository": "github:eropple/taskbotjs",
-  "files": ["*"],
+  "version": "0.1.0-wip",
+  "main": "dist",
+  "files": [
+    "*"
+  ],
   "scripts": {
-    "test": "tslint --project . && jest",
     "build": "tsc",
-    "watch": "tsc --watch --preserveWatchOutput",
     "clean": "rm -rf dist",
     "precommit": "npm run test",
-    "prepush": "npm run test"
+    "prepush": "npm run test",
+    "test": "tslint --project . && jest",
+    "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@taskbotjs/client": "0.1.0-wip",
@@ -41,5 +40,8 @@
     "ts-jest": "^22.4.1",
     "tslint": "^5.9.1",
     "typescript": "^2.7.2"
+  },
+  "engines": {
+    "node": ">= 8.10.0"
   }
 }

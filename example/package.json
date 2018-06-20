@@ -1,23 +1,22 @@
 {
   "private": true,
   "name": "@taskbotjs/example",
-  "version": "0.1.0-wip",
   "license": "MIT",
-  "engines": {
-    "node": ">= 8.10.0"
-  },
-  "main": "dist",
   "repository": "github:eropple/taskbotjs",
-  "files": ["*"],
+  "version": "0.1.0-wip",
+  "main": "dist",
+  "files": [
+    "*"
+  ],
   "scripts": {
-    "producer": "node ./dist/producer",
-    "consumer": "../service/bin/taskbot.js --config-file cfg/example.config.js",
-    "test": "tslint --project . && jest",
     "build": "tsc",
-    "watch": "tsc --watch --preserveWatchOutput",
     "clean": "rm -rf dist",
     "precommit": "npm run test",
-    "prepush": "npm run test"
+    "consumer": "../service/bin/taskbot.js --config-file cfg/example.config.js",
+    "producer": "node ./dist/producer",
+    "prepush": "npm run test",
+    "test": "tslint --project . && jest",
+    "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@taskbotjs/client": "0.1.0-wip",
@@ -32,5 +31,8 @@
   "devDependencies": {
     "tslint": "^5.9.1",
     "typescript": "^2.7.2"
+  },
+  "engines": {
+    "node": ">= 8.10.0"
   }
 }
