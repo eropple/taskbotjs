@@ -7,7 +7,8 @@ import sleepAsync from "sleep-promise";
 
 import {
   Client,
-  ClientMiddleware
+  ClientMiddleware,
+  Job
 } from "@taskbotjs/client";
 
 import { exampleClientMiddleware } from "../exampleClientMiddleware";
@@ -49,6 +50,7 @@ const clientPool = Client.withRedisOptions(logger, {
   url: process.env.TASKBOT_REDIS_URL || "redis://localhost:18377",
   prefix: "ex/"
 }, clientMiddleware);
+Job.setDefaultClientPool(clientPool);
 
 (async () => {
   while (true) {
@@ -68,12 +70,12 @@ const clientPool = Client.withRedisOptions(logger, {
 
     if (chance.integer({ min: 0, max: 100 }) < 5) {
       logger.info("Queueing fail job.");
-      await clientPool.use(async (taskbot) => taskbot.perform(FailJob));
+      await FailJob.perform();
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 5) {
       logger.info("Queueing long job.");
-      await clientPool.use(async (taskbot) => taskbot.perform(LongJob));
+      await LongJob.perform();
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 15) {

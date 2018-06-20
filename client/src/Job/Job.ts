@@ -8,6 +8,7 @@ import { IDependencies } from "../dependencies/IDependencies";
 import { JobDescriptor, ClientRoot } from "..";
 import { JobDescriptorOptions } from "../JobMetadata";
 import { RetryFunctionTimingFunction, defaultJobBackoff } from "./backoff";
+import { ClientPool, DateLike } from "../ClientBase";
 
 const chance = new Chance();
 
@@ -28,6 +29,10 @@ export function generateJobId(manual: boolean = false) {
   }
 }
 
+const NO_DEFAULT_CLIENT_POOL =
+  "No default client pool assigned. You must set a " +
+  "default client pool before using static Job shorthand.";
+
 export class JobBase {
   static readonly jobName: string;
   static readonly defaultQueue: string;
@@ -44,6 +49,12 @@ export class JobBase {
     this.jobId = this.descriptor ? this.descriptor.id : generateJobId(true);
 
     this.logger = baseLogger.child({ component: this.constructor.name, jobId: this.jobId });
+  }
+
+  protected static _defaultClientPool: ClientPool | undefined;
+  static get defaultClientPool(): ClientPool | undefined { return this._defaultClientPool; }
+  static setDefaultClientPool(v: ClientPool) {
+    this._defaultClientPool = v;
   }
 }
 
@@ -66,4 +77,36 @@ export class Job<TDependencies extends IDependencies> extends JobBase {
   }
 
   async perform(...args: any[]): Promise<void> {};
+
+  static async perform(...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.perform(this, ...args));
+  }
+
+  static async performWithOptions(userOptions: Partial<JobDescriptorOptions>, ...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.performWithOptions(this, userOptions, ...args));
+  }
+
+  static async schedule(date: DateLike, ...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.schedule(date, this, ...args));
+  }
+
+  static async scheduleWithOptions(date: DateLike, userOptions: Partial<JobDescriptorOptions>, ...args: any[]) {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.scheduleWithOptions(date, this, userOptions, ...args));
+  }
 }
