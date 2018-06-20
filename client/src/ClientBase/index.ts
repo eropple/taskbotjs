@@ -93,12 +93,12 @@ export abstract class ClientRoot {
   abstract get doneSet(): IDone;
   abstract queue(queueName: string): IQueue;
 
-  async performAsync(jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
+  async perform(jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
     // TypeScript dsallows default arguments in abstract class methods or interface methods, so...
-    return this.performAsyncWithOptions(jobType, optionsFor(jobType), args);
+    return this.performWithOptions(jobType, optionsFor(jobType), args);
   }
 
-  async performAsyncWithOptions(
+  async performWithOptions(
     jobType: ConstructableJobBase | string,
     userOptions: Partial<JobDescriptorOptions>,
     ...args: any[]
@@ -108,11 +108,11 @@ export abstract class ClientRoot {
     return this.queue(descriptor.options.queue).enqueue(descriptor);
   }
 
-  async performAt(date: DateLike, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
-    return this.performAtWithOptions(date, jobType, optionsFor(jobType), args);
+  async schedule(date: DateLike, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
+    return this.scheduleWithOptions(date, jobType, optionsFor(jobType), args);
   }
 
-  async performAtWithOptions(
+  async scheduleWithOptions(
     date: DateLike,
     jobType: ConstructableJobBase | string,
     userOptions: Partial<JobDescriptorOptions>,

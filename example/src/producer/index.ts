@@ -55,32 +55,32 @@ const clientPool = Client.withRedisOptions(logger, {
     if (chance.integer({ min: 0, max: 100 }) < 20) {
       for (let i = 0; i < chance.integer({ min: 1, max: 20 }); ++i) {
         logger.info("Queueing ping job.");
-        await clientPool.use(async (taskbot) => taskbot.performAsync(PingJob));
+        await clientPool.use(async (taskbot) => taskbot.perform(PingJob));
       }
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 20) {
       for (let i = 0; i < chance.integer({ min: 1, max: 20 }); ++i) {
         logger.info("Queueing arg job.");
-        await clientPool.use(async (taskbot) => taskbot.performAsync(ArgJob, chance.integer({ min: 1, max: 100 })));
+        await clientPool.use(async (taskbot) => taskbot.perform(ArgJob, chance.integer({ min: 1, max: 100 })));
       }
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 5) {
       logger.info("Queueing fail job.");
-      await clientPool.use(async (taskbot) => taskbot.performAsync(FailJob));
+      await clientPool.use(async (taskbot) => taskbot.perform(FailJob));
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 5) {
       logger.info("Queueing long job.");
-      await clientPool.use(async (taskbot) => taskbot.performAsync(LongJob));
+      await clientPool.use(async (taskbot) => taskbot.perform(LongJob));
     }
 
     if (chance.integer({ min: 0, max: 100 }) < 15) {
       const t = DateTime.utc().plus({ seconds: 15 });
       for (let i = 0; i < chance.integer({ min: 1, max: 3 }); ++i) {
         logger.info("Queueing a job to be fired in 15 seconds.");
-        await clientPool.use(async (taskbot) => taskbot.performAt(t, FutureJob));
+        await clientPool.use(async (taskbot) => taskbot.schedule(t, FutureJob));
       }
     }
 
