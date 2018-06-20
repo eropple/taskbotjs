@@ -175,6 +175,18 @@ export class ConfigBase {
    * sufficiently specced Redis cluster.
    */
   concurrency: number = 20;
+
+  /**
+   * If true, invokes `JobBase.setDefaultClientPool` with the `ClientPool` yielded
+   * by this configuration to the service. This allows your TaskBotJS code to use
+   * static methods on your job classes to invoke the jobs rather than having to
+   * acquire a client themselves (which is faster if you have a batch to do, but is
+   * also more boilerplate).
+   *
+   * @see JobBase
+   */
+  setDefaultClientPool: boolean = true;
+
   /**
    * Period of time to pause after each intake pass.
    */

@@ -14,7 +14,8 @@ import {
   Client,
   ClientPool,
   defaultJobBackoff,
-  ClientRoot
+  ClientRoot,
+  Job
 } from "@taskbotjs/client";
 
 import { Config, ConfigBase, TimeInterval } from "../Config";
@@ -177,6 +178,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
 
   constructor(config: Config<TDependencies>) {
     super(config.buildClientPool());
+    if (config.setDefaultClientPool) {
+      Job.setDefaultClientPool(this.clientPool);
+    }
+
     this.config = config.copy();
     this.baseLogger = this.config.logger;
 
