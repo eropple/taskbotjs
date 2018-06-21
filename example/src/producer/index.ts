@@ -82,7 +82,7 @@ Job.setDefaultClientPool(clientPool);
       const t = DateTime.utc().plus({ seconds: 15 });
       for (let i = 0; i < chance.integer({ min: 1, max: 3 }); ++i) {
         logger.info("Queueing a job to be fired in 15 seconds.");
-        await clientPool.use(async (taskbot) => taskbot.schedule(t, FutureJob));
+        await clientPool.use(async (taskbot) => taskbot.scheduleIn({ seconds: 15 }, FutureJob));
       }
     }
 

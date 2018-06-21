@@ -20,7 +20,8 @@ import {
   PoolOptions,
   RetryFunctionTimingFunction,
   ClientMiddleware,
-  ClientMiddlewareFunction
+  ClientMiddlewareFunction,
+  DurationFields
 } from "@taskbotjs/client";
 
 import { ConstructableServerPlugin } from "../Server/ServerPlugin";
@@ -32,22 +33,6 @@ export type DependenciesFactory<TDependencies extends IDependencies> =
   (baseLogger: Bunyan, taskbot: ClientRoot) => TDependencies;
 
 export type JobMapping<TDependencies extends IDependencies> = { [s: string]: ConstructableJob<TDependencies> };
-
-/**
- * A type-lifted version of the important bits of Luxon's `Duration.fromObject()`,
- * which is used in our `TimeInterval` class.
- */
-export type DurationFields = {
-  years?: number,
-  quarters?: number,
-  months?: number,
-  weeks?: number,
-  days?: number,
-  hours?: number,
-  minutes?: number,
-  seconds?: number,
-  milliseconds?: number
-};
 
 /**
  * The various queue intakes are configured through inheritors of this

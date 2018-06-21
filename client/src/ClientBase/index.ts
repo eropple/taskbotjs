@@ -3,7 +3,7 @@ import os from "os";
 import Bunyan from "bunyan";
 import GenericPool from "generic-pool";
 import Chance from "chance";
-import { DateTime } from "luxon";
+import { DateTime, Duration } from "luxon";
 
 import { Job, optionsFor, generateJobId, ConstructableJob } from "../Job";
 import { JobDescriptor, JobDescriptorOptions } from "../JobMetadata";
@@ -14,7 +14,7 @@ import { ConstructableJobBase } from "../Job/ConstructableJob";
 import { ICounter } from "./ICounter";
 import { IScalar } from "./IScalar";
 import { ClientMiddleware, ClientMiddlewarePhase } from "../ClientMiddleware";
-import { QueueInfo, StorageInfo, BasicMetrics, WorkerInfo, MetricDayRange } from "../domain";
+import { QueueInfo, StorageInfo, BasicMetrics, WorkerInfo, MetricDayRange, DurationFields } from "../domain";
 import { IRetries, IDead, IScheduled, IDone } from "./ISortedSet";
 export { IRetries, IDead, IScheduled } from "./ISortedSet";
 
@@ -108,11 +108,11 @@ export abstract class ClientRoot {
     return this.queue(descriptor.options.queue).enqueue(descriptor);
   }
 
-  async schedule(date: DateLike, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
-    return this.scheduleWithOptions(date, jobType, optionsFor(jobType), args);
+  async scheduleAt(date: DateLike, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
+    return this.scheduleAtWithOptions(date, jobType, optionsFor(jobType), args);
   }
 
-  async scheduleWithOptions(
+  async scheduleAtWithOptions(
     date: DateLike,
     jobType: ConstructableJobBase | string,
     userOptions: Partial<JobDescriptorOptions>,
@@ -124,6 +124,19 @@ export abstract class ClientRoot {
 
     await this.scheduleSet.add(descriptor);
     return descriptor.id;
+  }
+
+  async scheduleIn(duration: Duration | DurationFields, jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
+    return this.scheduleAt(DateTime.utc().plus(duration), jobType, ...args);
+  }
+
+  async scheduleInWithOptions(
+    duration: Duration | DurationFields,
+    jobType: ConstructableJobBase | string,
+    userOptions: Partial<JobDescriptorOptions>,
+    ...args: any[]
+  ): Promise<string> {
+    return this.scheduleAtWithOptions(DateTime.utc().plus(duration), jobType, userOptions, ...args);
   }
 
   abstract async incrementCounter(counterName: string): Promise<number>;
