@@ -24,7 +24,7 @@ on [the website], too!
 TaskBotJS is a full-featured piece of software as-is, but as projects and companies
 grow there are features that enable those projects to accomplish common tasks
 that are nevertheless tricky to implement at a larger scale. I like to think of
-**TaskBotJS Pro** as a package that empowers developers with more options for
+**[TaskBotJS Pro]** as a package that empowers developers with more options for
 powerful, flexible jobs, and the upcoming **TaskBotJS Enterprise** (slated for
 release sometime in 2018) will give system administrators and devops engineers
 more options for safely, reliably, and securely running jobs related to your
@@ -34,3 +34,4 @@ products.
 
 [the website]: https://edboxes.com/taskbotjs.html
 
+[TaskBotJS Pro]: https://edboxes.com/taskbotjs.html
