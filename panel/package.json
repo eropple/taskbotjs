@@ -42,5 +42,12 @@
   },
   "engines": {
     "node": ">= 8.10.0"
-  }
+  },
+  "keywords": [
+    "queue",
+    "worker",
+    "job",
+    "redis",
+    "control panel"
+  ]
 }
