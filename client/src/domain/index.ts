@@ -40,3 +40,19 @@ export interface StorageInfo {
   readonly type: string;
   readonly data: object;
 }
+
+/**
+ * A type-lifted version of the important bits of Luxon's `Duration.fromObject()`,
+ * which is used in our `TimeInterval` class.
+ */
+export type DurationFields = {
+  years?: number,
+  quarters?: number,
+  months?: number,
+  weeks?: number,
+  days?: number,
+  hours?: number,
+  minutes?: number,
+  seconds?: number,
+  milliseconds?: number
+};

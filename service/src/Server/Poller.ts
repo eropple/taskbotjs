@@ -8,7 +8,7 @@ import {
 
 import { TimeInterval } from "../Config";
 import { sleepFor } from "../util";
-import { PollerConfig, DurationFields } from "../Config/Config";
+import { PollerConfig } from "../Config/Config";
 import { intervalSplayMilliseconds } from "../util/random";
 import { ServerBase } from ".";
 

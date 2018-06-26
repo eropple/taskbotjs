@@ -1,5 +1,4 @@
 {
-  "private": true,
   "name": "@taskbotjs/example",
   "license": "MIT",
   "repository": "github:eropple/taskbotjs",

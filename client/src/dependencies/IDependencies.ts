@@ -1,7 +1,7 @@
 import Bunyan from "bunyan";
-import { ClientRoot } from "..";
+import { ClientPool } from "../ClientBase";
 
 export interface IDependencies {
   readonly baseLogger: Bunyan;
-  readonly taskbot: ClientRoot;
+  readonly clientPool: ClientPool;
 }

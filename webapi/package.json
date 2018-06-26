@@ -1,5 +1,4 @@
 {
-  "private": true,
   "name": "@taskbotjs/webapi",
   "license": "LGPL-3.0-only",
   "repository": "github:eropple/taskbotjs",

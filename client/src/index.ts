@@ -53,6 +53,8 @@ export {
 } from "./Job/backoff";
 
 export {
+  DurationFields,
+
   QueueInfo,
   WorkerInfo,
   StorageInfo,

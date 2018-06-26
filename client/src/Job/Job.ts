@@ -2,12 +2,14 @@ import os from "os";
 
 import Bunyan from "bunyan";
 import Chance from "chance";
-import { DateTime } from "luxon";
+import { DateTime, Duration } from "luxon";
 
 import { IDependencies } from "../dependencies/IDependencies";
 import { JobDescriptor, ClientRoot } from "..";
 import { JobDescriptorOptions } from "../JobMetadata";
 import { RetryFunctionTimingFunction, defaultJobBackoff } from "./backoff";
+import { ClientPool, DateLike } from "../ClientBase";
+import { DurationFields } from "../domain";
 
 const chance = new Chance();
 
@@ -28,6 +30,10 @@ export function generateJobId(manual: boolean = false) {
   }
 }
 
+const NO_DEFAULT_CLIENT_POOL =
+  "No default client pool assigned. You must set a " +
+  "default client pool before using static Job shorthand.";
+
 export class JobBase {
   static readonly jobName: string;
   static readonly defaultQueue: string;
@@ -45,6 +51,12 @@ export class JobBase {
 
     this.logger = baseLogger.child({ component: this.constructor.name, jobId: this.jobId });
   }
+
+  protected static _defaultClientPool: ClientPool | undefined;
+  static get defaultClientPool(): ClientPool | undefined { return this._defaultClientPool; }
+  static setDefaultClientPool(v: ClientPool) {
+    this._defaultClientPool = v;
+  }
 }
 
 export class Job<TDependencies extends IDependencies> extends JobBase {
@@ -57,13 +69,64 @@ export class Job<TDependencies extends IDependencies> extends JobBase {
 
   protected readonly deps: TDependencies;
 
-  protected get taskbot() { return this.deps.taskbot; }
-
   constructor(deps: TDependencies, descriptor?: JobDescriptor) {
     super(deps.baseLogger, descriptor);
 
     this.deps = deps as TDependencies;
   }
 
+  protected async withClient<T>(fn: (client: ClientRoot) => T | Promise<T>): Promise<T> {
+    return this.deps.clientPool.use(fn);
+  }
+
   async perform(...args: any[]): Promise<void> {};
+
+  static async perform(...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.perform(this, ...args));
+  }
+
+  static async performWithOptions(userOptions: Partial<JobDescriptorOptions>, ...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.performWithOptions(this, userOptions, ...args));
+  }
+
+  static async scheduleAt(date: DateLike, ...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.scheduleAt(date, this, ...args));
+  }
+
+  static async scheduleAtWithOptions(date: DateLike, userOptions: Partial<JobDescriptorOptions>, ...args: any[]) {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.scheduleAtWithOptions(date, this, userOptions, ...args));
+  }
+
+  static async scheduleIn(duration: Duration | DurationFields, ...args: any[]): Promise<string> {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.scheduleIn(duration, this, ...args));
+  }
+
+  static async scheduleInWithOptions(duration: Duration | DurationFields, userOptions: Partial<JobDescriptorOptions>, ...args: any[]) {
+    if (!this._defaultClientPool) {
+      throw new Error(NO_DEFAULT_CLIENT_POOL);
+    }
+
+    return this._defaultClientPool.use((taskbot) => taskbot.scheduleInWithOptions(duration, this, userOptions, ...args));
+  }
+
 }

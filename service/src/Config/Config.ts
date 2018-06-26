@@ -20,7 +20,9 @@ import {
   PoolOptions,
   RetryFunctionTimingFunction,
   ClientMiddleware,
-  ClientMiddlewareFunction
+  ClientMiddlewareFunction,
+  DurationFields,
+  ClientPool
 } from "@taskbotjs/client";
 
 import { ConstructableServerPlugin } from "../Server/ServerPlugin";
@@ -29,25 +31,9 @@ import { Duration } from "luxon";
 export type FinalizedConfig<TDependencies extends IDependencies> = DeepReadonly<Config<TDependencies>>;
 export type LoggerFactory = () => Bunyan;
 export type DependenciesFactory<TDependencies extends IDependencies> =
-  (baseLogger: Bunyan, taskbot: ClientRoot) => TDependencies;
+  (baseLogger: Bunyan, clientPool: ClientPool) => TDependencies;
 
 export type JobMapping<TDependencies extends IDependencies> = { [s: string]: ConstructableJob<TDependencies> };
-
-/**
- * A type-lifted version of the important bits of Luxon's `Duration.fromObject()`,
- * which is used in our `TimeInterval` class.
- */
-export type DurationFields = {
-  years?: number,
-  quarters?: number,
-  months?: number,
-  weeks?: number,
-  days?: number,
-  hours?: number,
-  minutes?: number,
-  seconds?: number,
-  milliseconds?: number
-};
 
 /**
  * The various queue intakes are configured through inheritors of this
@@ -175,6 +161,18 @@ export class ConfigBase {
    * sufficiently specced Redis cluster.
    */
   concurrency: number = 20;
+
+  /**
+   * If true, invokes `JobBase.setDefaultClientPool` with the `ClientPool` yielded
+   * by this configuration to the service. This allows your TaskBotJS code to use
+   * static methods on your job classes to invoke the jobs rather than having to
+   * acquire a client themselves (which is faster if you have a batch to do, but is
+   * also more boilerplate).
+   *
+   * @see JobBase
+   */
+  setDefaultClientPool: boolean = true;
+
   /**
    * Period of time to pause after each intake pass.
    */
@@ -303,10 +301,10 @@ export class Config<TDependencies extends IDependencies> extends ConfigBase {
   /**
    * The function that will be used to produce a dependencies object for each job.
    * The default value creates an object that passes only the barest requirements,
-   * the logger and a TaskBotJS client, to the job.
+   * the logger and a TaskBotJS client pool, to the job.
    */
   dependencies: DependenciesFactory<TDependencies> =
-    (baseLogger, taskbot) => ({ baseLogger, taskbot } as TDependencies);
+    (baseLogger, clientPool) => ({ baseLogger, clientPool } as TDependencies);
 
   /**
    * Creates a shallow clone of this object, with one exception: the logger that is a

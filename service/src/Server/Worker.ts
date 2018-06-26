@@ -52,7 +52,7 @@ export class Worker<TDependencies extends IDependencies> {
     initialDescriptor.status = initialDescriptor.status || { startedAt, retry: 0 };
     initialDescriptor.status.startedAt = startedAt;
 
-    const descriptor = this._descriptor = await deps.taskbot.updateJob(initialDescriptor);
+    const descriptor = this._descriptor = await deps.clientPool.use((taskbot) => taskbot.updateJob(initialDescriptor));
 
     try {
       this._jobCtor = this.jobMapping[descriptor.name];

@@ -1,7 +1,9 @@
 import Chance from "chance";
 import { Duration } from "luxon";
 
-import { DurationFields } from "../Config/Config";
+import {
+  DurationFields
+} from "@taskbotjs/client";
 
 const chance = new Chance();
 
