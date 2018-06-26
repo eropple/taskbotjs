@@ -3,7 +3,7 @@
   "description": "The client library for the best NodeJS background job processing on the planet.",
   "license": "LGPL-3.0",
   "repository": "github:eropple/taskbotjs",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.3",
   "main": "dist",
   "files": [
     "*"

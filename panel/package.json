@@ -3,7 +3,7 @@
   "description": "The web frontend for TaskBotJS.",
   "license": "LGPL-3.0",
   "repository": "github:eropple/taskbotjs",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.3",
   "main": "dist",
   "bin": {
     "taskbot-panel.js": "./bin/taskbot-panel.js"
@@ -21,8 +21,8 @@
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@taskbotjs/client": "0.1.0-alpha.1",
-    "@taskbotjs/webapi": "0.1.0-alpha.1",
+    "@taskbotjs/client": "0.1.0-alpha.3",
+    "@taskbotjs/webapi": "0.1.0-alpha.3",
     "bunyan": "1.8.12",
     "bunyan-prettystream-circularsafe": "^0.3.1",
     "commander": "2.15.1",
