@@ -10,8 +10,8 @@ on [GitHub].
 ## 0.1.0 ##
 **Initial software release!**
 
-- Performs immediate jobs through `perform_async`.
-- Schedules jobs for later execution through `perform_at`.
+- Performs immediate jobs through `perform`.
+- Schedules jobs for later execution through `scheduleIn` and `scheduleAt`.
 - Takes jobs from multiple queues, which can be weighted for preferential
   treatment.
 - Jobs can retry on failure, with per-job configurable retry strategies.

@@ -11,3 +11,9 @@ tmp
 .vagrant
 
 packaging/_artifacts
+
+/*/README.md
+/*/LICENSE.md
+/*/CODE-OF-CONDUCT.md
+/*/RELEASE_NOTES.md
+!/packaging/README.md
