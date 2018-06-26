@@ -28,16 +28,16 @@ for package in $(ls -d $BUILD_ROOT/_artifacts/*.tgz); do
   cd $target_dir
   tar --strip-components=1 -xzf $target_file
 
-  JS_PACKAGE_NAME=$(jq -r .name "$target_dir/package.json")
-  JS_PACKAGE_VERSION=$(jq -r .version "$target_dir/package.json")
+  JS_PACKAGE_NAME=$(jq -r .name "$target_dir/package.json" | sed 's,/.*,,' | sed 's/@//')
+  JS_PACKAGE_VERSION=$(jq -r .version "$target_dir/package.json" | sed 's,/.*,,' | sed 's/@//')
 
   if [[ $JS_PACKAGE_NAME != $PRODUCT ]]; then
-    echo "!!! ${package_name}: bad JS_PACKAGE_NAME"
+    echo "!!! ${package_name}: bad JS_PACKAGE_NAME ($PRODUCT vs $JS_PACKAGE_NAME}"
     RET=1
   fi
 
   if [[ $JS_PACKAGE_VERSION != $VERSION ]]; then
-    echo "!!! ${package_name}: bad JS_PACKAGE_VERSION"
+    echo "!!! ${package_name}: bad JS_PACKAGE_VERSION ($VERSION vs $JS_PACKAGE_VERSION)"
     RET=1
   fi
 done
@@ -45,5 +45,7 @@ done
 if [[ $RET -eq 0 ]]; then
   rm -rf $TMPDIR
 fi
+
+exit $RET
 
 
