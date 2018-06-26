@@ -1,6 +1,7 @@
 {
   "name": "@taskbotjs/webapi",
-  "license": "LGPL-3.0-only",
+  "description": "The HTTP API for working remotely with TaskBotJS.",
+  "license": "LGPL-3.0",
   "repository": "github:eropple/taskbotjs",
   "version": "0.1.0-alpha.1",
   "main": "dist",

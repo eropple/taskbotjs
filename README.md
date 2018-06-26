@@ -1,6 +1,6 @@
 <img width="450" src="https://raw.githubusercontent.com/eropple/taskbotjs/master/taskbotjs.png" alt="TaskBotJS Logo" title="Ain't he cute?" />
 
-<em>Fantastic background job processing for JavaScript and TypeScript.</em>
+<em>The best TypeScript and JavaScript background job processing on the planet.</em>
 
 [![npm version](https://badge.fury.io/js/%40taskbotjs%2Fservice.svg)](https://badge.fury.io/js/%40taskbotjs%2Fservice)
 

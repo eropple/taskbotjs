@@ -1,6 +1,7 @@
 {
   "name": "@taskbotjs/panel",
-  "license": "LGPL-3.0-only",
+  "description": "The web frontend for TaskBotJS.",
+  "license": "LGPL-3.0",
   "repository": "github:eropple/taskbotjs",
   "version": "0.1.0-alpha.1",
   "main": "dist",

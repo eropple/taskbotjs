@@ -1,5 +1,6 @@
 {
   "name": "@taskbotjs/example",
+  "description": "An example project for TaskBotJS.",
   "license": "MIT",
   "repository": "github:eropple/taskbotjs",
   "version": "0.1.0-alpha.1",
