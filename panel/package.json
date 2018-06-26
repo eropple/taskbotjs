@@ -2,7 +2,7 @@
   "name": "@taskbotjs/panel",
   "license": "LGPL-3.0-only",
   "repository": "github:eropple/taskbotjs",
-  "version": "0.1.0-wip",
+  "version": "0.1.0-alpha.1",
   "main": "dist",
   "bin": {
     "taskbot-panel.js": "./bin/taskbot-panel.js"
@@ -20,8 +20,8 @@
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@taskbotjs/client": "0.1.0-wip",
-    "@taskbotjs/webapi": "0.1.0-wip",
+    "@taskbotjs/client": "0.1.0-alpha.1",
+    "@taskbotjs/webapi": "0.1.0-alpha.1",
     "bunyan": "1.8.12",
     "bunyan-prettystream-circularsafe": "^0.3.1",
     "commander": "2.15.1",

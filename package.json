@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@taskbotjs/workspace",
-  "version": "0.1.0-wip",
+  "version": "0.1.0-alpha.1",
   "workspaces": [
     "service",
     "client",
