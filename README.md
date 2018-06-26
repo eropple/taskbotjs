@@ -1,5 +1,8 @@
 <img width="450" src="https://raw.githubusercontent.com/eropple/taskbotjs/master/taskbotjs.png" alt="TaskBotJS Logo" title="Ain't he cute?" />
+
 <em>Fantastic background job processing for JavaScript and TypeScript.</em>
+
+[![npm version](https://badge.fury.io/js/%40taskbotjs%2Fservice.svg)](https://badge.fury.io/js/%40taskbotjs%2Fservice)
 
 # TaskBotJS #
 TaskBotJS is a job queue and processing service for NodeJS applications. Using
@@ -14,7 +17,8 @@ It's pretty cool, and I'm excited that you're here to check it out.
 
 ## Documentation ##
 TaskBotJS has a pretty extensive [wiki] that discusses its goals, its use cases,
-and pretty much everything you'd want to know about it.
+and pretty much everything you'd want to know about it. You can find more details
+on [the website], too!
 
 ## TaskBotJS Pro: the Commercial Version ##
 TaskBotJS is a full-featured piece of software as-is, but as projects and companies
@@ -27,3 +31,5 @@ more options for safely, reliably, and securely running jobs related to your
 products.
 
 [wiki]: https://github.com/eropple/taskbotjs/wiki
+
+[the website]: https://edboxes.com/taskbotjs.html
