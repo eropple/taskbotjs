@@ -12,8 +12,13 @@ tmp
 
 packaging/_artifacts
 
-/*/README.md
-/*/LICENSE.md
-/*/CODE-OF-CONDUCT.md
-/*/RELEASE_NOTES.md
+README.md
+!/README.md
 !/packaging/README.md
+
+LICENSE.md
+!/LICENSE.md
+CODE-OF-CONDUCT.md
+!/CODE-OF-CONDUCT.md
+RELEASE_NOTES.md
+!/RELEASE_NOTES.md
