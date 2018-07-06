@@ -310,50 +310,6 @@ export class WebAPIApp {
       res.json({ ok: true });
     }));
 
-    app.get("/done", asyncHandler(async (req, res) => {
-      const resp: Array<JobDescriptor> =
-        await this.clientPool.use(
-          (taskbot) => taskbot.doneSet.peek(req.query.limit, req.query.offset));
-      res.json(resp);
-    }));
-
-    app.post("/done/clean", asyncHandler(async (req, res) => {
-      const count = await this.clientPool.use((taskbot) => taskbot.doneSet.cleanAll());
-
-      res.json({ ok: true, count });
-    }));
-
-    app.get("/done/:jobId", asyncHandler(async (req, res) => {
-      const jobId = req.params.jobId;
-      const resp: JobDescriptor | null =
-        await this.clientPool.use(
-          async (taskbot) => {
-            if (await taskbot.doneSet.contains(jobId)) {
-              return taskbot.readJob(jobId);
-            }
-
-            return null;
-          });
-
-      if (!resp) {
-        throw new NotFoundError(`Job '${jobId}' not found.`);
-      } else {
-        res.json(resp);
-      }
-    }));
-
-    app.delete("/done/:jobId", asyncHandler(async (req, res) => {
-      const jobId = req.params.jobId;
-
-      await this.clientPool.use(
-        async (taskbot) => {
-          await taskbot.doneSet.remove(jobId);
-          await taskbot.unsafeDeleteJob(jobId);
-        });
-
-      res.json({ ok: true });
-    }));
-
     if (logRequests) {
       app.use(Middleware.buildErrorLoggingMiddleware(logger));
     }

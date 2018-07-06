@@ -25,8 +25,5 @@ export class JanitorPlugin extends ServerPlugin<JanitorConfig> {
 
     const deadCount = await taskbot.deadSet.cleanAllBefore(deadCutoff);
     this.logger.debug({ deadCount }, "Completed dead cleanup.");
-
-    const doneCount = await taskbot.doneSet.cleanAllBefore(doneCutoff);
-    this.logger.debug({ doneCount }, "Completed done cleanup.");
   }
 }

@@ -45,7 +45,3 @@ export interface IScheduled extends IJobSortedSet {
 export interface IDead extends IJobSortedSet {
   resurrect(jobOrId: JobDescriptorOrId): Promise<string | null>;
 }
-
-export interface IDone extends IJobSortedSet {
-
-}

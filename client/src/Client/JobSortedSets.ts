@@ -6,7 +6,7 @@ import { Multi } from "redis";
 
 import { AsyncRedis } from "../redis";
 import { JobDescriptor, JobDescriptorOrId } from "../JobMetadata";
-import { IRetries, IScheduled, IDead, IDone, IJobSortedSet } from "../ClientBase/ISortedSet";
+import { IRetries, IScheduled, IDead, IJobSortedSet } from "../ClientBase/ISortedSet";
 import { ScoreSortedSet } from "./ScoreSortedSet";
 import { Client } from ".";
 
@@ -152,11 +152,5 @@ export class DeadJobSortedSet extends JobSortedSet implements IDead {
     await this.asyncRedis.execMulti(multi);
 
     return jd.id;
-  }
-}
-
-export class DoneJobSortedSet extends JobSortedSet implements IDone {
-  constructor(baseLogger: Bunyan, client: Client, asyncRedis: AsyncRedis) {
-    super(baseLogger, client, asyncRedis, "done", client.redisPrefix, doneScorer);
   }
 }

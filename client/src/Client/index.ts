@@ -22,13 +22,12 @@ import { optionsFor, generateJobId, Job } from "../Job";
 import { ClientBase, ClientPoolBase, buildClientPool, ClientPool, IRetries, IScheduled, IDead } from "../ClientBase";
 import { keyForQueue, Queue } from "./Queue";
 import { IQueue } from "../ClientBase/IQueue";
-import { RetryJobSortedSet, ScheduledJobSortedSet, DeadJobSortedSet, DoneJobSortedSet } from "./JobSortedSets";
+import { RetryJobSortedSet, ScheduledJobSortedSet, DeadJobSortedSet } from "./JobSortedSets";
 import { ICounter } from "../ClientBase/ICounter";
 import { Counter } from "./Counter";
 import { WorkerInfo, MetricDayRange, LUXON_YMD, QueueInfo, StorageInfo } from "..";
 import { BasicMetrics } from "../domain";
 import { Multi } from "redis";
-import { IDone } from "../ClientBase/ISortedSet";
 import { ClientMiddlewarePhase, ClientMiddleware } from "../ClientMiddleware";
 
 const CanonicalJSON = require("canonicaljson");
@@ -39,7 +38,6 @@ export class Client extends ClientBase<AsyncRedis> {
   readonly retrySet: RetryJobSortedSet;
   readonly scheduleSet: ScheduledJobSortedSet;
   readonly deadSet: DeadJobSortedSet;
-  readonly doneSet: DoneJobSortedSet;
 
   private readonly queues: { [queueName: string]: Queue } = {};
 
@@ -58,7 +56,6 @@ export class Client extends ClientBase<AsyncRedis> {
     this.retrySet = new RetryJobSortedSet(this.logger, this, this.asyncRedis);
     this.scheduleSet = new ScheduledJobSortedSet(this.logger, this, this.asyncRedis);
     this.deadSet = new DeadJobSortedSet(this.logger, this, this.asyncRedis);
-    this.doneSet = new DoneJobSortedSet(this.logger, this, this.asyncRedis);
   }
 
   queue(queueName: string): Queue {
@@ -156,7 +153,7 @@ export class Client extends ClientBase<AsyncRedis> {
 
     this.logger.trace({ jobIds }, "Fetching jobs.");
 
-    const jsons = await this.asyncRedis.mget(...keys);
+    const jsons = jobIds.length > 0 ? await this.asyncRedis.mget(...keys) : [];
 
     return Promise.all(
       (jsons as (string | null)[]).map(async (json: string | null) => {
@@ -181,7 +178,7 @@ export class Client extends ClientBase<AsyncRedis> {
     }
 
     this.logger.trace({ jobId: id }, "Deleting job.");
-    const num = await this.asyncRedis.del(id);
+    const num = await this.asyncRedis.del(`jobs/${id}`);
 
     if (num !== 1) {
       this.logger.info({ jobId: id }, "DEL returned non-1 value; potential anomaly.");
@@ -202,10 +199,6 @@ export class Client extends ClientBase<AsyncRedis> {
 
   async withDeadSet<T>(fn: (dead: IDead) => Promise<T>): Promise<T> {
     return fn(this.deadSet);
-  }
-
-  async withDoneSet<T>(fn: (done: IDone) => Promise<T>): Promise<T> {
-    return fn(this.doneSet);
   }
 
   async getQueueInfo(): Promise<Array<QueueInfo>> {

@@ -92,18 +92,6 @@ export class Sets extends React.Component {
           </TableRow>
           <TableRow>
             <TableCell>
-              <Typography variant="body2" component={Link} to="/done">
-                Done
-              </Typography>
-            </TableCell>
-            <TableCell>
-              <Typography variant="body1" component={Link} to="/done">
-                {metrics.doneSetSize}
-              </Typography>
-            </TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell>
               <Typography variant="body2" component={Link} to="/dead">
                 Dead
               </Typography>

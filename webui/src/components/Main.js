@@ -106,30 +106,6 @@ export class Main extends React.Component {
                         }
                       } />
 
-                      <Route exact path="/done" render={
-                        (route) => <Redirect to={"/done/page/1"} />
-                      } />
-                      <Route exact path="/done/page/:pageNumber" render={
-                        (route) => {
-                          const { pageNumber } = route.match.params;
-
-                          return <SetExplorer setName="done" canLaunch={false} pageNumber={parseInt(pageNumber, 10)} />;
-                        }
-                      } />
-                      <Route exact path="/done/jobs/:jobId" render={
-                        (route) => {
-                          const { jobId } = route.match.params;
-                          const queryParams = qs.parse(route.location.search.substr(1));
-                          let { pageHint } = queryParams;
-
-                          if (pageHint) {
-                            pageHint = parseInt(pageHint, 10);
-                          }
-
-                          return <SetJob setName="done" canLaunch={false} jobId={jobId} pageHint={pageHint} />;
-                        }
-                      } />
-
                       <Route exact path="/dead" render={
                         (route) => <Redirect to={"/dead/page/1"} />
                       } />

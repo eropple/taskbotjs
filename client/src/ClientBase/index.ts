@@ -15,7 +15,7 @@ import { ICounter } from "./ICounter";
 import { IScalar } from "./IScalar";
 import { ClientMiddleware, ClientMiddlewarePhase } from "../ClientMiddleware";
 import { QueueInfo, StorageInfo, BasicMetrics, WorkerInfo, MetricDayRange, DurationFields } from "../domain";
-import { IRetries, IDead, IScheduled, IDone } from "./ISortedSet";
+import { IRetries, IDead, IScheduled } from "./ISortedSet";
 export { IRetries, IDead, IScheduled } from "./ISortedSet";
 
 const chance = new Chance();
@@ -90,7 +90,6 @@ export abstract class ClientRoot {
   abstract get retrySet(): IRetries;
   abstract get scheduleSet(): IScheduled;
   abstract get deadSet(): IDead;
-  abstract get doneSet(): IDone;
   abstract queue(queueName: string): IQueue;
 
   async perform(jobType: ConstructableJobBase, ...args: any[]): Promise<string> {
@@ -151,7 +150,6 @@ export abstract class ClientRoot {
   abstract async withRetrySet<T>(fn: (retry: IRetries) => Promise<T>): Promise<T>;
   abstract async withScheduledSet<T>(fn: (scheduled: IScheduled) => Promise<T>): Promise<T>;
   abstract async withDeadSet<T>(fn: (dead: IDead) => Promise<T>): Promise<T>;
-  abstract async withDoneSet<T>(fn: (done: IDone) => Promise<T>): Promise<T>;
 
   abstract async getQueueInfo(): Promise<Array<QueueInfo>>;
   abstract async getWorkerInfo(): Promise<Array<WorkerInfo>>;

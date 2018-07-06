@@ -426,10 +426,10 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
         this.logger.debug({ jobId: worker.descriptor.id }, "Acking job and placing in done set.");
 
         const finishedDescriptor = await client.updateJob(worker.descriptor);
-        await Promise.all<any>([
-          client.doneSet.add(finishedDescriptor),
-          this.intake.requireAcknowledgment ? client.acknowledgeQueueJob(finishedDescriptor, this.name) : null
-        ]);
+        if (this.intake.requireAcknowledgment) {
+          await client.acknowledgeQueueJob(finishedDescriptor, this.name);
+        }
+        await client.unsafeDeleteJob(finishedDescriptor.id);
 
         this.emit(this.onJobComplete, finishedDescriptor);
       } else {
@@ -474,11 +474,9 @@ export class Server<TDependencies extends IDependencies> extends ServerBase {
     await this.acquireJobLock(async () => {
       const jobsToStart = this.jobsToStart;
       const activeWorkers = this.activeWorkers;
-      const { activeJobCount, waitingJobCount, availableSlots } = this.currentWorkerStatus();
 
       while (jobsToStart.length > 0) {
         const descriptor = jobsToStart.shift()!; // ! = length is guaranteed to be greater than zero
-        const jobName = descriptor.name;
 
         const worker = new Worker<TDependencies>(this.baseLogger, descriptor, this.config.jobMap);
         newWorkers.push(worker);
