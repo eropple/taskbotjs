@@ -61,6 +61,11 @@ config.logger = Bunyan.createLogger({
   ]
 });
 
+config.janitor.polling.interval = { minutes: 2 };
+config.janitor.polling.splay = { minutes: 1 };
+
+config.janitor.deadAge = { minutes: 10 };
+
 config.register(PingJob, PongJob, FailJob, FutureJob, ArgJob, LongJob);
 
 config.registerMiddleware(
