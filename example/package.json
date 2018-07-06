@@ -3,7 +3,7 @@
   "description": "An example project for TaskBotJS.",
   "license": "MIT",
   "repository": "github:eropple/taskbotjs",
-  "version": "0.9.0",
+  "version": "0.9.1-wip",
   "main": "dist",
   "files": [
     "*"
@@ -19,8 +19,8 @@
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@taskbotjs/client": "0.9.0",
-    "@taskbotjs/service": "0.9.0",
+    "@taskbotjs/client": "0.9.1-wip",
+    "@taskbotjs/service": "0.9.1-wip",
     "@types/chance": "^1.0.0",
     "bunyan": "^1.8.12",
     "bunyan-prettystream-circularsafe": "^0.3.1",
