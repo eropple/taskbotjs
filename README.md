@@ -16,9 +16,9 @@ work done.
 It's pretty cool, and I'm excited that you're here to check it out.
 
 ## Documentation ##
-TaskBotJS has a pretty extensive [wiki] that discusses its goals, its use cases,
-and pretty much everything you'd want to know about it. You can find more details
-on [the website], too!
+TaskBotJS has pretty extensive [documentation] that discusses its goals, its use
+cases, and pretty much everything you'd want to know about it. You can find more
+details on [the website], too!
 
 ## TaskBotJS Pro: the Commercial Version ##
 TaskBotJS is a full-featured piece of software as-is, but as projects and companies
@@ -30,7 +30,7 @@ release sometime in 2018) will give system administrators and devops engineers
 more options for safely, reliably, and securely running jobs related to your
 products.
 
-[wiki]: https://github.com/eropple/taskbotjs/wiki
+[documentation]: https://github.com/eropple/taskbotjs/wiki
 
 [the website]: https://edboxes.com/taskbotjs.html
 
