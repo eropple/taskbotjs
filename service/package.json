@@ -3,7 +3,7 @@
   "description": "Thejob runner for the best NodeJS background job processing on the planet.",
   "license": "LGPL-3.0",
   "repository": "github:eropple/taskbotjs",
-  "version": "0.9.0-wip",
+  "version": "0.9.0",
   "main": "dist",
   "bin": {
     "taskbot.js": "./bin/taskbot.js"
@@ -20,7 +20,7 @@
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@taskbotjs/client": "0.9.0-wip",
+    "@taskbotjs/client": "0.9.0",
     "async-lock": "1.1.3",
     "bunyan": "1.8.12",
     "bunyan-prettystream-circularsafe": "0.3.1",

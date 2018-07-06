@@ -2,7 +2,7 @@
   "name": "@taskbotjs/webui",
   "license": "LGPL-3.0",
   "repository": "github:eropple/taskbotjs",
-  "version": "0.9.0-wip",
+  "version": "0.9.0",
   "scripts": {
     "build": "react-scripts build",
     "eject": "react-scripts eject",
