@@ -8,9 +8,9 @@
 TaskBotJS is a job queue and processing service for NodeJS applications. Using
 Redis as a background store, TaskBotJS allows you to offload long-running jobs away
 from your web application and handles all the rough edges involved: job
-scheduling, handling failures and retries, priority queueing, the works. It's
-designed to make developers and operators alike happy to use it and above
-everything else TaskBotJS just wants to get out of your way so you can get your
+scheduling, handling failures and retries, priority queueing, and the works. It's
+designed to make developers and operators happy to use it. Above
+everything else, TaskBotJS just wants to get out of your way so you can get your
 work done.
 
 It's pretty cool, and I'm excited that you're here to check it out.
