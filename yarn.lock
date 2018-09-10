@@ -16,6 +16,12 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
+"@stratumn/canonicaljson@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@stratumn/canonicaljson/-/canonicaljson-1.0.2.tgz#ad3ab93530578e3744b05caec1ffcc268e68bd76"
+  dependencies:
+    bignumber.js "^4.1.0"
+
 "@types/async-lock@1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@types/async-lock/-/async-lock-1.1.0.tgz#002b1ebeebd382aff66b68bed70a74c7bdd06e3e"
@@ -766,12 +772,6 @@ camelcase@^1.0.2:
 camelcase@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/camelcase/-/camelcase-4.1.0.tgz#d545635be1e33c542649c69173e5de6acfae34dd"
-
-canonicaljson@1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/canonicaljson/-/canonicaljson-1.0.1.tgz#3cef92555c18eca5311bf9fff077aa2646f23ba1"
-  dependencies:
-    bignumber.js "^4.1.0"
 
 capture-exit@^1.2.0:
   version "1.2.0"

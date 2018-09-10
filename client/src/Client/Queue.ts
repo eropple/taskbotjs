@@ -7,7 +7,7 @@ import { Client } from ".";
 import { Multi } from "redis";
 import { notEmpty } from "../util/notEmpty";
 
-const CanonicalJSON = require("canonicaljson");
+const CanonicalJSON = require("@stratumn/canonicaljson");
 
 export function keyForQueue(name: string): string {
   return `queue/${name}`;

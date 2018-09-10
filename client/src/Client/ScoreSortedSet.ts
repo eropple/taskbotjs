@@ -11,7 +11,7 @@ import { DateTime } from "luxon";
 import { notEmpty } from "../util/notEmpty";
 
 // TODO: contribute a typings?
-const CanonicalJSON = require("canonicaljson");
+const CanonicalJSON = require("@stratumn/canonicaljson");
 
 export function keyForSortedSet(name: string): string {
   return `sorted/${name}`;

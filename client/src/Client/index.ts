@@ -30,7 +30,7 @@ import { BasicMetrics } from "../domain";
 import { Multi } from "redis";
 import { ClientMiddlewarePhase, ClientMiddleware } from "../ClientMiddleware";
 
-const CanonicalJSON = require("canonicaljson");
+const CanonicalJSON = require("@stratumn/canonicaljson");
 
 export class Client extends ClientBase<AsyncRedis> {
   readonly requiresAcknowledge: boolean = false;
