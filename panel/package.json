@@ -17,7 +17,7 @@
     "precommit": "npm run test",
     "prepack": "npx ./bin/prepackage.js",
     "prepush": "npm run test",
-    "test": "tslint --project . && jest",
+    "test": "tslint --project . && jest --passWithNoTests",
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
