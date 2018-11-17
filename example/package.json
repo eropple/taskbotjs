@@ -15,7 +15,7 @@
     "consumer": "../service/bin/taskbot.js --config-file cfg/example.config.js",
     "producer": "node ./dist/producer",
     "prepush": "npm run test",
-    "test": "tslint --project . && jest",
+    "test": "tslint --project . && jest --passWithNoTests",
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {

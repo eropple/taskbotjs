@@ -13,7 +13,7 @@
     "clean": "rm -rf dist",
     "precommit": "npm run test",
     "prepush": "npm run test",
-    "test": "tslint --project . && jest",
+    "test": "tslint --project . && jest --passWithNoTests",
     "watch": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
